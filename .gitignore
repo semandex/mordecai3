@@ -11,3 +11,4 @@ ner/*
 _*
 .vscode/
 tmp/
+.idea

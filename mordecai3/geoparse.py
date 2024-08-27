@@ -19,7 +19,6 @@ from mordecai3.mordecai_utilities import spacy_doc_setup
 from mordecai3.roberta_qa import add_event_loc, setup_qa
 from mordecai3.torch_model import ProductionData, geoparse_model
 
-import logging
 logger = logging.getLogger()
 handler = logging.StreamHandler() 
 formatter = logging.Formatter(
