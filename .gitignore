@@ -12,3 +12,5 @@ _*
 .vscode/
 tmp/
 .idea
+build
+dist

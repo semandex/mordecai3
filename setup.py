@@ -1,8 +1,5 @@
 from setuptools import find_packages, setup
 
-
-# from setuptools import setup
-#
 setup(
     name='mordecai3',
     version='3.0.0.0',
@@ -25,11 +22,13 @@ setup(
         'numpy>=1.22.2,<2.0',
         'jsonlines>=3.0.0,<4.0',
         'xmltodict>=0.12.0,<1.0',
-        'elasticsearch>=7.11.0,<8.0',
-        'elasticsearch-dsl>=7.3.0,<8.0'
+        'opensearch-py>=2.7.1',
+        'opensearch-dsl>=2.1.0',
+        'textacy>=0.13.0'
     ],
     dependency_links=[
-        'https://github.com/explosion/spacy-models/releases/download/en_core_web_trf-3.5.0/en_core_web_trf-3.5.0.tar.gz'],
+        'https://github.com/explosion/spacy-models/releases/download/en_core_web_trf-3.5.0/en_core_web_trf-3.5.0.tar.gz'
+    ],
     include_package_data=True,
     package_data={'mordecai3': ['assets/admin1CodesASCII.json',
                                 'assets/country_bert_768.npy',

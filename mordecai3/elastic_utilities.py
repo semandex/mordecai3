@@ -5,29 +5,29 @@ from collections import Counter
 
 import jellyfish
 import numpy as np
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Q, Search
+from opensearchpy import OpenSearch
+from opensearch_dsl import Q, Search
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-def make_conn():
+def make_conn(host:str = 'localhost', port:int = 9200):
     kwargs = dict(
-        hosts=['localhost'],
-        port=9200,
+        hosts=[host],
+        port=port,
         use_ssl=False,
     )
-    CLIENT = Elasticsearch(**kwargs)
+    CLIENT = OpenSearch(**kwargs)
     conn = Search(using=CLIENT, index="geonames")
     return conn
 
-def setup_es():
+def setup_es(host:str = 'localhost', port:int = 9200):
     kwargs = dict(
-        hosts=['localhost'],
-        port=9200,
+        hosts=[host],
+        port=port,
         use_ssl=False,
     )
-    CLIENT = Elasticsearch(**kwargs)
+    CLIENT = OpenSearch(**kwargs)
     try:
         CLIENT.ping()
         logger.info("Successfully connected to Elasticsearch.")
@@ -252,16 +252,16 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
         else:
             parent_place = None 
     else:
-        parent_place = None 
+        parent_place = None
     if fuzzy:
         q = {"multi_match": {"query": search_name,
                              "fields": ['name', 'alternativenames', 'asciiname'],
-                             "fuzziness" : fuzzy,
-                            }}
+                             "fuzziness": fuzzy,
+                             }}
     else:
         q = {"multi_match": {"query": search_name,
-                                 "fields": ['name', 'asciiname', 'alternativenames'],
-                                "type" : "phrase"}}
+                             "fields": ['name', 'asciiname', 'alternativenames'],
+                             "type": "phrase"}}
 
     if limit_types:
         p_filter = Q("term", feature_class="P")

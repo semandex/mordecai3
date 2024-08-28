@@ -24,7 +24,7 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-logging.getLogger("elasticsearch").setLevel(logging.WARN)
+logging.getLogger("opensearch").setLevel(logging.WARN)
 
 spacy_doc_setup()
 

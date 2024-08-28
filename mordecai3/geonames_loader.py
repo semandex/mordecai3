@@ -265,7 +265,8 @@ class GeoNamesLoader:
     def load_geocodes(self):
 
         if not self.data_check:
-            logger.error(f"Data check failed. Please make sure all required data file present in {self.data_dir} directory")
+            logger.error(
+                f"Data check failed. Please make sure all required data file present in {self.data_dir} directory")
             return
 
         self.create_index_with_mapping()
@@ -282,24 +283,25 @@ class GeoNamesLoader:
         helpers.bulk(self.os_client, actions, chunk_size=1000)
         self.os_client.indices.refresh(index=self.index_name)
 
-# if __name__ == "__main__":
-#     try:
-#         geo_dir = os.environ["geo_names_data_dir"]
-#     except KeyError:
-#         logger.error("Please provide env variable 'geo_names_data_dir' where the geonames data is located")
-#         sys.exit(-1)
-#
-#     index = 'geonames'
-#     host = 'localhost'
-#     port = 8502
-#     client = OpenSearch(hosts=[{'host': host, 'port': port}])
-#
-#     t = time.time()
-#
-#     csv.field_size_limit()
-#
-#     loader = GeoNamesLoader(index_name=index, os_client=client, data_dir=geo_dir)
-#     loader.load_geocodes()
-#
-#     e = (time.time() - t) / 60
-#     logger.info("Total tile loading in minutes: ", e)
+
+if __name__ == "__main__":
+    try:
+        geo_dir = os.environ["geo_names_data_dir"]
+    except KeyError:
+        logger.error("Please provide env variable 'geo_names_data_dir' where the geonames data is located")
+        sys.exit(-1)
+
+    index = 'geonames'
+    host = 'localhost'
+    port = 8502
+    client = OpenSearch(hosts=[{'host': host, 'port': port}])
+
+    t = time.time()
+
+    csv.field_size_limit()
+
+    loader = GeoNamesLoader(index_name=index, os_client=client, data_dir=geo_dir)
+    loader.load_geocodes()
+
+    e = (time.time() - t) / 60
+    logger.info("Total tile loading in minutes: ", e)

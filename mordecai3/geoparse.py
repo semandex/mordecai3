@@ -29,8 +29,12 @@ logger.setLevel(logging.DEBUG)
 
 spacy_doc_setup()
 
+spacy_model_name = os.environ.get("SPACY_MODEL_NAME", "en_core_web_trf")
+mordecai_model_pt = "assets/mordecai_2024-06-04.pt"
+
+
 def load_nlp():
-    nlp = spacy.load("en_core_web_trf")
+    nlp = spacy.load(spacy_model_name)
     nlp.add_pipe("token_tensors")
     return nlp
 
@@ -102,7 +106,7 @@ def doc_to_ex_expanded(doc):
     of dictionaries with information on each place name entity.
 
     In the broader pipeline, this is called after nlp() and the results are passed to the 
-    Elasticsearch step.
+    Opensearch step.
 
     Parameters
     ---------
@@ -120,7 +124,7 @@ def doc_to_ex_expanded(doc):
     # but we do want to geoparse them.
     loc_ents = [ent for ent in doc.ents if ent.label_ in ['GPE', 'LOC', 'EVENT_LOC', 'NORP']]
     for ent in doc.ents:
-        if ent.label_ in ['GPE', 'LOC', 'EVENT_LOC', 'FAC']:
+        if ent.label_ in ['GPE', 'LOC', 'EVENT_LOC', 'FAC', 'ORG']:
             tensor = np.mean(np.vstack([i._.tensor.data for i in ent]), axis=0)
             other_locs = [i for e in loc_ents for i in e if i not in ent]
             in_rel = guess_in_rel(ent)
@@ -163,7 +167,9 @@ class Geoparser:
                  event_geoparse=False,
                  debug=False,
                  trim=None,
-                 check_es=True):
+                 check_es=True,
+                 os_host='localhost',
+                 os_port=8502):
         self.debug = debug
         self.trim = trim
         if not nlp:
@@ -178,15 +184,15 @@ class Geoparser:
                 logger.info(f"Error loading token_tensors pipe: {e}")
                 pass
             self.nlp = nlp
-        self.conn = make_conn()
+        self.conn = make_conn(host=os_host, port=os_port)
         if check_es:
             try:
                 assert len(list(geo.conn[1])) > 0
-                logger.info("Successfully connected to Elasticsearch.")
+                logger.info("Successfully connected to Opensearch.")
             except:
-                ConnectionError("Could not locate Elasticsearch. Are you sure it's running?")
+                ConnectionError("Could not locate Opensearch. Are you sure it's running?")
         if not model_path:
-            model_path = pkg_resources.resource_filename("mordecai3", "assets/mordecai_2024-06-04.pt")
+            model_path = pkg_resources.resource_filename("mordecai3", mordecai_model_pt)
         self.model = load_model(model_path)
         if not geo_asset_path:
             geo_asset_path = pkg_resources.resource_filename("mordecai3", "assets/")
@@ -484,8 +490,7 @@ class Geoparser:
 
             
 if __name__ == "__main__":
-    geo = Geoparser("/home/andy/projects/mordecai3/mordecai_2024-06-04.pt",
-                    event_geoparse=False, trim=False)
+    geo = Geoparser(mordecai_model_pt, event_geoparse=False, trim=False)
     text = "Speaking from Berlin, President Obama expressed his hope for a peaceful resolution to the fighting in Homs and Aleppo."
     text = "Speaking from the city of Xinwonsnos, President Obama expressed his hope for a peaceful resolution to the fighting in Janskan and Alanenesla."
     geo.geoparse_doc(text)
