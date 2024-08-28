@@ -62,15 +62,36 @@ First, run following command to download the spaCy model used to identify place 
 python -m spacy download en_core_web_trf
 ```
 
-Second, Mordecai3 requires a local instance of Elasticsearch with a Geonames index. Instructions for setting up the index are available here: https://github.com/openeventdata/es-geonames
+Second, Mordecai3 requires a local instance of Opensearch with a Geonames index. 
 
-Once built, the index can be started like this:
+To build this index, you will need to download few files into a directory, for example "geo_names_data" directory. Here are the flat files to download
+```shell
+cd geo_names_data
+curl https://download.geonames.org/export/dump/allCountries.zip -o allCountries.zip
+curl https://download.geonames.org/export/dump/admin1CodesASCII.txt -o admin1CodesASCII.txt
+curl https://download.geonames.org/export/dump/admin2Codes.txt -o admin2Codes.txt
 
-```bash
-docker run -d -p 127.0.0.1:9200:9200 -e "discovery.type=single-node" -v $PWD/geonames_index/:/usr/share/elasticsearch/data elasticsearch:7.10.1
+unzip allCountries.zip
 ```
 
+This should create 3 text files like these in `geo_name_data` directory
+```shell
+admin1CodesASCII.txt
+admin2Codes.txt
+allCountries.txt
+```
+
+Once you have this director with 3 text files, you can use `GeoNamesLoader` class to load into your opensearch instance. 
+Here is a sample code to load it using GeoNamesLoader utility class
+```python
+    client = OpenSearch(hosts=[{'host': 'localhost', 'port': 9200}])
+    loader = GeoNamesLoader(index_name='geonames', os_client=client, data_dir='geo_name_data')
+    loader.load_geocodes()
+```
+
+
 If you're doing event geoparsing, that step requires other models to be downloaded from https://huggingface.co/. These will be automatically downloaded the first time the program is run (if it's 
+
 
 ## Details and Citation
 
