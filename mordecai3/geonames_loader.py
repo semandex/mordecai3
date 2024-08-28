@@ -1,12 +1,19 @@
+import logging
 import sys
-
-from opensearchpy import OpenSearch, helpers
 import csv
 import os
+import time
 from datetime import datetime
 from tqdm import tqdm
-import time
+from opensearchpy import OpenSearch, helpers
 from textacy.preprocessing.remove import accents as remove_accents
+
+logger = logging.getLogger()
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 def iso_convert(iso2c):
@@ -71,13 +78,13 @@ def iso_convert(iso2c):
                 "UZ": "UZB", "VA": "VAT", "VC": "VCT", "VE": "VEN", "VG": "VGB",
                 "VI": "VIR", "VN": "VNM", "VU": "VUT", "WF": "WLF", "WS": "WSM",
                 "YE": "YEM", "YT": "MYT", "ZA": "ZAF", "ZM": "ZMB", "ZW": "ZWE",
-                "CS": "SCG", "AN": "ANT"}
+                "CS": "SCG", "AN": "ANT", "YU": "YUG"}
 
     try:
         iso3c = iso_dict[iso2c]
         return iso3c
     except KeyError:
-        print('Bad code: ' + iso2c)
+        logger.error(f"Bad code: {iso2c}")
         iso3c = "NA"
         return iso3c
 
@@ -108,25 +115,24 @@ class GeoNamesLoader:
         self.os_client = os_client
         self.data_dir = data_dir
         self.data_check = True
-        if not os.path.exists( self.data_dir ):
-            print(f"{data_dir} does not exists, nothing will get loaded")
+        if not os.path.exists(self.data_dir):
+            logger.error(f"{data_dir} does not exists, nothing will get loaded")
             self.data_check = False
 
         self.adm1_file = f"{self.data_dir}/admin1CodesASCII.txt"
         if not os.path.exists(self.adm1_file):
-            print(f"{self.adm1_file} does not exists, Need this file to load geo names")
+            logger.error(f"{self.adm1_file} does not exists, Need this file to load geo names")
             self.data_check = False
 
         self.adm2_file = f"{self.data_dir}/admin2Codes.txt"
         if not os.path.exists(self.adm2_file):
-            print(f"{self.adm2_file} does not exists, Need this file to load geo names")
+            logger.error(f"{self.adm2_file} does not exists, Need this file to load geo names")
             self.data_check = False
 
         self.geocode_file = f'{self.data_dir}/allCountries.txt'
         if not os.path.exists(self.geocode_file):
-            print(f"{self.geocode_file} does not exists, Need this file to load geo names")
+            logger.error(f"{self.geocode_file} does not exists, Need this file to load geo names")
             self.data_check = False
-
 
     def documents(self, reader, adm1_dict, adm2_dict, expand_ascii=True):
         """
@@ -151,7 +157,7 @@ class GeoNamesLoader:
         today_date = datetime.today().strftime("%Y-%m-%d")
         error_count = 0
         good_count = 0
-        for row in tqdm(reader, total=12237435):  # approx
+        for row in tqdm(reader, total=13040801):  # approx
             try:
                 coords = row[4] + "," + row[5]
                 country_code3 = iso_convert(row[8])
@@ -214,13 +220,12 @@ class GeoNamesLoader:
                 print(error, row)
                 error_count += 1
 
-        print('Good entry count:', good_count)
-        print('Exception count:', error_count)
-
+        logger.info('Good entry count:', good_count)
+        logger.info('Exception count:', error_count)
 
     def create_index_with_mapping(self):
         if self.os_client.indices.exists(index=self.index_name):
-            print(f"Index with name {self.index_name} already exits, nothing needed at this time")
+            logger.info(f"Index with name {self.index_name} already exits, nothing needed at this time")
             return
 
         os_mapping = """
@@ -254,37 +259,34 @@ class GeoNamesLoader:
             }
             """
 
-        print("loading mapping as ", os_mapping)
+        logger.info("loading mapping as ", os_mapping)
         self.os_client.indices.create(index=self.index_name, body=os_mapping)
-
 
     def load_geocodes(self):
 
         if not self.data_check:
-            print(f"Data check failed. Please make sure all required data file present in {self.data_dir} directory")
+            logger.error(f"Data check failed. Please make sure all required data file present in {self.data_dir} directory")
             return
 
         self.create_index_with_mapping()
 
         adm1_dict = read_admin_codes(self.adm1_file)
-        # print("Got admin1 dict as " , adm1_dict)
+        # logger.info("Got admin1 dict as " , adm1_dict)
 
         adm2_dict = read_admin_codes(self.adm2_file)
-        # print("Got admin2 dict as " , adm2_dict)
+        # logger.info("Got admin2 dict as " , adm2_dict)
 
         geocode_file = open(self.geocode_file, 'rt', encoding='utf-8')
         csv_reader = csv.reader(geocode_file, delimiter='\t')
         actions = self.documents(csv_reader, adm1_dict, adm2_dict)
         helpers.bulk(self.os_client, actions, chunk_size=1000)
-        self.os_client.indices.refresh(index = self.index_name)
-
-
+        self.os_client.indices.refresh(index=self.index_name)
 
 # if __name__ == "__main__":
 #     try:
 #         geo_dir = os.environ["geo_names_data_dir"]
 #     except KeyError:
-#         print("Please provide env variable 'geo_names_data_dir' where the geonames data is located")
+#         logger.error("Please provide env variable 'geo_names_data_dir' where the geonames data is located")
 #         sys.exit(-1)
 #
 #     index = 'geonames'
@@ -300,4 +302,4 @@ class GeoNamesLoader:
 #     loader.load_geocodes()
 #
 #     e = (time.time() - t) / 60
-#     print("Total tile loading in minutes: ", e)
+#     logger.info("Total tile loading in minutes: ", e)
