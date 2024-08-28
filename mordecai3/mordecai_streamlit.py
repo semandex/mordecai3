@@ -2,11 +2,12 @@ import numpy as np
 import spacy
 import streamlit as st
 import torch
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Search
+from opensearchpy import OpenSearch
+from opensearch_dsl import Search
 from spacy.language import Language
 from spacy.tokens import Token
 from torch_model import geoparse_model
+from geoparse import Geoparser
 
 HTML_WRAPPER = """<div style="overflow-x: auto; border: 1px solid #e6e9ef; border-radius: 0.25rem; padding: 1rem; margin-bottom: 2.5rem">{}</div>"""
 
@@ -55,7 +56,7 @@ def setup_es():
         port=9200,
         use_ssl=False,
     )
-    CLIENT = Elasticsearch(**kwargs)
+    CLIENT = OpenSearch(**kwargs)
     conn = Search(using=CLIENT, index="geonames")
     return conn
 
