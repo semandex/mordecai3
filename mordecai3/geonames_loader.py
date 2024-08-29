@@ -262,6 +262,9 @@ class GeoNamesLoader:
         logger.info("loading mapping as ", os_mapping)
         self.os_client.indices.create(index=self.index_name, body=os_mapping)
 
+    def data_check(self)-> bool:
+        return self.data_check
+
     def load_geocodes(self):
 
         if not self.data_check:
