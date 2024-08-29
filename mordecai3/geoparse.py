@@ -170,7 +170,7 @@ class Geoparser:
                  check_es=True,
                  os_host='localhost',
                  os_port=8502,
-                 index_name:str = 'geonames'):
+                 index_name: str = 'geonames'):
         self.debug = debug
         self.trim = trim
         if not nlp:
