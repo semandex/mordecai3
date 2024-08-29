@@ -8,10 +8,14 @@ import numpy as np
 from opensearchpy import OpenSearch
 from opensearch_dsl import Q, Search
 
+GEO_INDEX_NAME = 'geonames'
+OPENSEARCH_HOST = 'localhost'
+OPENSEARCH_PORT = 8502
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-def make_conn(host:str = 'localhost', port:int = 9200, index_name: str = 'geonames'):
+def make_conn(host:str = OPENSEARCH_HOST, port:int = OPENSEARCH_PORT, index_name: str = GEO_INDEX_NAME):
     kwargs = dict(
         hosts=[host],
         port=port,
@@ -21,7 +25,7 @@ def make_conn(host:str = 'localhost', port:int = 9200, index_name: str = 'geonam
     conn = Search(using=CLIENT, index=index_name)
     return conn
 
-def setup_es(host:str = 'localhost', port:int = 9200, index_name: str = 'geonames'):
+def setup_es(host:str = OPENSEARCH_HOST, port:int = OPENSEARCH_PORT, index_name: str = GEO_INDEX_NAME):
     kwargs = dict(
         hosts=[host],
         port=port,
