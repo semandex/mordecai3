@@ -8,20 +8,24 @@ import numpy as np
 from opensearchpy import OpenSearch
 from opensearch_dsl import Q, Search
 
+GEO_INDEX_NAME = 'geonames'
+OPENSEARCH_HOST = 'localhost'
+OPENSEARCH_PORT = 8502
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-def make_conn(host:str = 'localhost', port:int = 9200):
+def make_conn(host:str = OPENSEARCH_HOST, port:int = OPENSEARCH_PORT, index_name: str = GEO_INDEX_NAME):
     kwargs = dict(
         hosts=[host],
         port=port,
         use_ssl=False,
     )
     CLIENT = OpenSearch(**kwargs)
-    conn = Search(using=CLIENT, index="geonames")
+    conn = Search(using=CLIENT, index=index_name)
     return conn
 
-def setup_es(host:str = 'localhost', port:int = 9200):
+def setup_es(host:str = OPENSEARCH_HOST, port:int = OPENSEARCH_PORT, index_name: str = GEO_INDEX_NAME):
     kwargs = dict(
         hosts=[host],
         port=port,
@@ -33,7 +37,7 @@ def setup_es(host:str = 'localhost', port:int = 9200):
         logger.info("Successfully connected to Elasticsearch.")
     except:
         ConnectionError("Could not locate Elasticsearch. Are you sure it's running?")
-    conn = Search(using=CLIENT, index="geonames")
+    conn = Search(using=CLIENT, index=index_name)
     return conn
 
 def normalize(ll: list) -> np.array:    

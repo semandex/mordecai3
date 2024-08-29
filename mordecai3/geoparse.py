@@ -14,6 +14,9 @@ from mordecai3.elastic_utilities import (
     get_country_entry,
     get_entry_by_id,
     make_conn,
+    GEO_INDEX_NAME,
+    OPENSEARCH_PORT,
+    OPENSEARCH_HOST
 )
 from mordecai3.mordecai_utilities import spacy_doc_setup
 from mordecai3.roberta_qa import add_event_loc, setup_qa
@@ -168,8 +171,9 @@ class Geoparser:
                  debug=False,
                  trim=None,
                  check_es=True,
-                 os_host='localhost',
-                 os_port=8502):
+                 os_host=OPENSEARCH_HOST,
+                 os_port=OPENSEARCH_PORT,
+                 index_name: str = GEO_INDEX_NAME):
         self.debug = debug
         self.trim = trim
         if not nlp:
@@ -184,7 +188,7 @@ class Geoparser:
                 logger.info(f"Error loading token_tensors pipe: {e}")
                 pass
             self.nlp = nlp
-        self.conn = make_conn(host=os_host, port=os_port)
+        self.conn = make_conn(host=os_host, port=os_port, index_name=index_name)
         if check_es:
             try:
                 assert len(list(geo.conn[1])) > 0

@@ -8,6 +8,8 @@ from tqdm import tqdm
 from opensearchpy import OpenSearch, helpers
 from textacy.preprocessing.remove import accents as remove_accents
 
+from elastic_utilities import GEO_INDEX_NAME, OPENSEARCH_PORT, OPENSEARCH_HOST
+
 logger = logging.getLogger()
 handler = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
@@ -262,6 +264,9 @@ class GeoNamesLoader:
         logger.info("loading mapping as ", os_mapping)
         self.os_client.indices.create(index=self.index_name, body=os_mapping)
 
+    def data_check(self)-> bool:
+        return self.data_check
+
     def load_geocodes(self):
 
         if not self.data_check:
@@ -291,9 +296,9 @@ if __name__ == "__main__":
         logger.error("Please provide env variable 'geo_names_data_dir' where the geonames data is located")
         sys.exit(-1)
 
-    index = 'geonames'
-    host = 'localhost'
-    port = 8502
+    index = GEO_INDEX_NAME
+    host = OPENSEARCH_HOST
+    port = OPENSEARCH_PORT
     client = OpenSearch(hosts=[{'host': host, 'port': port}])
 
     t = time.time()
