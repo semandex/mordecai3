@@ -8,7 +8,7 @@ from tqdm import tqdm
 from opensearchpy import OpenSearch, helpers
 from textacy.preprocessing.remove import accents as remove_accents
 
-from elastic_utilities import GEO_INDEX_NAME, OPENSEARCH_PORT, OPENSEARCH_HOST
+from mordecai3.elastic_utilities import GEO_INDEX_NAME, OPENSEARCH_PORT, OPENSEARCH_HOST
 
 logger = logging.getLogger()
 handler = logging.StreamHandler()
