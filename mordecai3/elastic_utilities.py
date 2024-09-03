@@ -15,14 +15,20 @@ OPENSEARCH_PORT = 8502
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-def make_conn(host:str = OPENSEARCH_HOST, port:int = OPENSEARCH_PORT, index_name: str = GEO_INDEX_NAME):
+def get_client(host:str = OPENSEARCH_HOST, port:int = OPENSEARCH_PORT):
     kwargs = dict(
         hosts=[host],
         port=port,
         use_ssl=False,
     )
-    CLIENT = OpenSearch(**kwargs)
-    conn = Search(using=CLIENT, index=index_name)
+    return OpenSearch(**kwargs)
+
+def make_conn(host:str = OPENSEARCH_HOST, port:int = OPENSEARCH_PORT, index_name: str = GEO_INDEX_NAME):
+    client = get_client(host, port)
+    return os_conn(client, index_name)
+
+def os_conn(client: OpenSearch, index_name: str = GEO_INDEX_NAME):
+    conn = Search(using=client, index=index_name)
     return conn
 
 def setup_es(host:str = OPENSEARCH_HOST, port:int = OPENSEARCH_PORT, index_name: str = GEO_INDEX_NAME):

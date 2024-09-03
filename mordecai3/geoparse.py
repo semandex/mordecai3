@@ -6,6 +6,7 @@ import numpy as np
 import pkg_resources
 import spacy
 import torch
+from opensearchpy import OpenSearch
 from torch.utils.data import DataLoader
 
 from mordecai3.elastic_utilities import (
@@ -13,10 +14,8 @@ from mordecai3.elastic_utilities import (
     get_adm1_country_entry,
     get_country_entry,
     get_entry_by_id,
-    make_conn,
-    GEO_INDEX_NAME,
-    OPENSEARCH_PORT,
-    OPENSEARCH_HOST
+    os_conn,
+    GEO_INDEX_NAME
 )
 from mordecai3.mordecai_utilities import spacy_doc_setup
 from mordecai3.roberta_qa import add_event_loc, setup_qa
@@ -163,7 +162,8 @@ def load_hierarchy(asset_path):
             
 
 class Geoparser:
-    def __init__(self, 
+    def __init__(self,
+                 os_client:OpenSearch,
                  model_path=None, 
                  geo_asset_path=None,
                  nlp=None,
@@ -171,8 +171,6 @@ class Geoparser:
                  debug=False,
                  trim=None,
                  check_es=True,
-                 os_host=OPENSEARCH_HOST,
-                 os_port=OPENSEARCH_PORT,
                  index_name: str = GEO_INDEX_NAME):
         self.debug = debug
         self.trim = trim
@@ -188,7 +186,7 @@ class Geoparser:
                 logger.info(f"Error loading token_tensors pipe: {e}")
                 pass
             self.nlp = nlp
-        self.conn = make_conn(host=os_host, port=os_port, index_name=index_name)
+        self.conn = os_conn(client=os_client, index_name=index_name)
         if check_es:
             try:
                 assert len(list(geo.conn[1])) > 0
