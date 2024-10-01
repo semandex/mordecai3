@@ -330,7 +330,7 @@ class Geoparser:
                      plover_cat=None,
                      debug=False,
                      trim=True,
-                     include_countries:list[str] | None=None,
+                     include_countries: list[str] | None = None,
                      exclude_countries: list[str] | None = None,
                      max_choices=50):
         """
@@ -355,6 +355,8 @@ class Geoparser:
             If provided, the geoparser will only consider locations in the given list of countries.
         exclude_countries : list[str]
             If provided, the geoparser will exclyude locations in the given list of countries.
+        max_choices: int
+            The maximum number of results. Default is 50
 
         Returns
         -------
@@ -382,7 +384,8 @@ class Geoparser:
         doc_ex = doc_to_ex_expanded(doc)
         if doc_ex:
             es_data = add_es_data_doc(doc_ex, self.conn, max_results=100,
-                                      include_countries=include_countries, exclude_countries=exclude_countries)
+                                      include_countries=include_countries,
+                                      exclude_countries=exclude_countries)
 
             dataset = ProductionData(es_data, max_choices=100)
 

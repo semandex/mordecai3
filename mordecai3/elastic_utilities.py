@@ -214,7 +214,10 @@ def _clean_search_name(search_name):
     return search_name
 
 def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
-                remove_correct=False, include_countries:list[str] | None=None, exclude_countries:list[str] | None=None):
+                remove_correct=False,
+                include_countries: list[str] | None = None,
+                exclude_countries: list[str] | None = None
+                ):
     """
     Run an Elasticsearch/geonames query for a single example and add the results
     to the object.
@@ -233,6 +236,10 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
         If True, remove the correct result from the list of results.
         This is useful for training a model to handle "none of the above"
         cases.
+    include_countries: list[str]
+        If provided, it will only return results from the list of countries provided
+    exclude_countries: list[str]
+        If provided, it will only return results excluding the list of countries provided
 
     Examples
     --------
@@ -274,10 +281,10 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
                              "type": "phrase"}}
 
     include_country_filter = None
-    if include_countries is not None and include_countries:
+    if include_countries:
         include_country_filter = Q("terms", country_code3=include_countries)
     exclude_country_filter = None
-    if exclude_countries is not None and exclude_countries:
+    if exclude_countries:
         exclude_country_filter = ~Q("terms", country_code3=exclude_countries)
 
     country_filter = None
@@ -336,8 +343,10 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
 
 
 def add_es_data_doc(doc_ex, conn, max_results=50, fuzzy=0, limit_types=False,
-                    remove_correct=False, include_countries:list[str] | None=None,
-                    exclude_countries:list[str] | None=None):
+                    remove_correct=False,
+                    include_countries: list[str] | None = None,
+                    exclude_countries: list[str] | None = None
+                    ):
     doc_es = []
     for ex in doc_ex:
         with warnings.catch_warnings():

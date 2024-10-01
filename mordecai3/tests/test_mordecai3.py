@@ -1,4 +1,5 @@
 import pytest
+from numpy.testing import assert_array_equal
 
 from .. import elastic_utilities as es_utils
 from .. import geoparse
@@ -167,6 +168,10 @@ def test_known_country(geo):
     text = "Lots of damage done in some of the key areas in the San Jose, Philippines"
     out = geo.geoparse_doc(text, include_countries=['PHL'])
     assert out['geolocated_ents'][0]['country_code3'] == "PHL"
+
+    text = "He lived initially in Calgary and later in the city of Berut."
+    out = geo.geoparse_doc(text, include_countries=['PAK','CAN'])
+    assert_array_equal([loc['country_code3'] for loc in out['geolocated_ents']], ['CAN', 'PAK'])
 
 
 ###### Testing specific components #####
