@@ -164,6 +164,9 @@ def test_known_country(geo):
     for item in out['geolocated_ents']:
         assert item.get('country_code3', None) is None
 
+    text = "Lots of damage done in some of the key areas in the San Jose, Philippines"
+    out = geo.geoparse_doc(text, include_countries=['PHL'])
+    assert out['geolocated_ents'][0]['country_code3'] == "PHL"
 
 
 ###### Testing specific components #####

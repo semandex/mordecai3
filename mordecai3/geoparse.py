@@ -353,7 +353,7 @@ class Geoparser:
             useful for debugging.
         include_countries : list[str]
             If provided, the geoparser will only consider locations in the given list of countries.
-        include_countries : list[str]
+        exclude_countries : list[str]
             If provided, the geoparser will exclyude locations in the given list of countries.
 
         Returns
