@@ -325,12 +325,13 @@ class Geoparser:
         return d
 
 
-    def geoparse_doc(self, 
-                     text, 
-                     plover_cat=None, 
-                     debug=False, 
-                     trim=True, 
-                     known_country=None,
+    def geoparse_doc(self,
+                     text,
+                     plover_cat=None,
+                     debug=False,
+                     trim=True,
+                     include_countries: list[str] | None = None,
+                     exclude_countries: list[str] | None = None,
                      max_choices=50):
         """
         Geoparse a document.
@@ -350,8 +351,12 @@ class Geoparser:
             If True, removes some of the keys from the output dictionary that are only used
             internally for selecting the best geoparsed location. Including these keys is
             useful for debugging.
-        known_country : str
-            If provided, the geoparser will only consider locations in the given country.
+        include_countries : list[str]
+            If provided, the geoparser will only consider locations in the given list of countries.
+        exclude_countries : list[str]
+            If provided, the geoparser will exclyude locations in the given list of countries.
+        max_choices: int
+            The maximum number of results. Default is 50
 
         Returns
         -------
@@ -379,7 +384,8 @@ class Geoparser:
         doc_ex = doc_to_ex_expanded(doc)
         if doc_ex:
             es_data = add_es_data_doc(doc_ex, self.conn, max_results=100,
-                                              known_country=known_country)
+                                      include_countries=include_countries,
+                                      exclude_countries=exclude_countries)
 
             dataset = ProductionData(es_data, max_choices=100)
 

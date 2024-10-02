@@ -214,7 +214,10 @@ def _clean_search_name(search_name):
     return search_name
 
 def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
-                remove_correct=False, known_country=None):
+                remove_correct=False,
+                include_countries: list[str] | None = None,
+                exclude_countries: list[str] | None = None
+                ):
     """
     Run an Elasticsearch/geonames query for a single example and add the results
     to the object.
@@ -233,6 +236,10 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
         If True, remove the correct result from the list of results.
         This is useful for training a model to handle "none of the above"
         cases.
+    include_countries: list[str]
+        If provided, it will only return results from the list of countries provided
+    exclude_countries: list[str]
+        If provided, it will only return results excluding the list of countries provided
 
     Examples
     --------
@@ -273,16 +280,31 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
                              "fields": ['name', 'asciiname', 'alternativenames'],
                              "type": "phrase"}}
 
+    include_country_filter = None
+    if include_countries:
+        include_country_filter = Q("terms", country_code3=include_countries)
+    exclude_country_filter = None
+    if exclude_countries:
+        exclude_country_filter = ~Q("terms", country_code3=exclude_countries)
+
+    country_filter = None
+    if include_country_filter:
+        country_filter = include_country_filter
+
+    if exclude_country_filter:
+        if country_filter:
+            country_filter &= exclude_country_filter
+        else:
+            country_filter = exclude_country_filter
+
     if limit_types:
         p_filter = Q("term", feature_class="P")
         a_filter = Q("term", feature_class="A")
         combined_filter = p_filter | a_filter
-        if known_country:
-            country_filter = Q("term", country_code3=known_country)
+        if country_filter:
             combined_filter = combined_filter & country_filter
         res = conn.query(q).filter(combined_filter).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
-    elif known_country:
-        country_filter = Q("term", country_code3=known_country)
+    elif country_filter:
         res = conn.query(q).filter(country_filter).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
     else:
         res = conn.query(q).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
@@ -300,8 +322,7 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
             a_filter = Q("term", feature_class="A")
             combined_filter = p_filter | a_filter
             res = conn.query(q).filter(combined_filter).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
-        if known_country:
-            country_filter = Q("term", country_code3=known_country)
+        elif country_filter:
             res = conn.query(q).filter(country_filter).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
         else:
             res = conn.query(q).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
@@ -322,12 +343,16 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
 
 
 def add_es_data_doc(doc_ex, conn, max_results=50, fuzzy=0, limit_types=False,
-                    remove_correct=False, known_country=None):
+                    remove_correct=False,
+                    include_countries: list[str] | None = None,
+                    exclude_countries: list[str] | None = None
+                    ):
     doc_es = []
     for ex in doc_ex:
         with warnings.catch_warnings():
             try:
-                es = add_es_data(ex, conn, max_results, fuzzy, limit_types, remove_correct, known_country)
+                es = add_es_data(ex, conn, max_results, fuzzy, limit_types, remove_correct, include_countries,
+                                 exclude_countries)
                 doc_es.append(es)
             except Warning:
                 continue

@@ -1,4 +1,5 @@
 import pytest
+from numpy.testing import assert_array_equal
 
 from .. import elastic_utilities as es_utils
 from .. import geoparse
@@ -8,18 +9,18 @@ def test_statement_event_loc(geo):
     text = "Speaking from Berlin, President Obama expressed his hope for a peaceful resolution to the fighting in Homs and Aleppo."
     #text = "President Obama expressed his hope for a peaceful resolution to the fighting."
     icews_cat = "Make statement"
-    out = geo.geoparse_doc(text, icews_cat) 
+    out = geo.geoparse_doc(text, icews_cat)
     assert out['event_location_raw'] == 'Berlin'
 
 def test_fight_event_loc(geo):
     text = "Speaking from Berlin, President Obama expressed his hope for a peaceful resolution to the fighting in Homs and Aleppo."
     icews_cat = "Use conventional military force"
-    out = geo.geoparse_doc(text, icews_cat) 
+    out = geo.geoparse_doc(text, icews_cat)
     assert out['event_location_raw'] == 'Homs and Aleppo'
 
 def test_no_event_given(geo):
     text = "Speaking from Berlin, President Obama expressed his hope for a peaceful resolution to the fighting in Homs and Aleppo."
-    out = geo.geoparse_doc(text) 
+    out = geo.geoparse_doc(text)
     assert out['event_location_raw'] == ''
 
 def test_no_locs(geo):
@@ -28,37 +29,37 @@ def test_no_locs(geo):
     assert out['geolocated_ents'] == []
 
     icews_cat = "Make statement"
-    out = geo.geoparse_doc(text, icews_cat) 
+    out = geo.geoparse_doc(text, icews_cat)
     assert out['geolocated_ents'] == []
 
 def test_three_locs(geo):
     text = "Speaking from Berlin, President Obama expressed his hope for a peaceful resolution to the fighting in the cities of Homs and Aleppo."
-    out = geo.geoparse_doc(text) 
+    out = geo.geoparse_doc(text)
     assert out['geolocated_ents'][0]['geonameid'] == "2950159" # Berlin
     assert out['geolocated_ents'][1]['geonameid'] == "169577" # Homs (city)
     assert out['geolocated_ents'][2]['geonameid'] == "170063" # Aleppo (city)
 
 def test_governorates(geo):
     text = "Speaking from Berlin, President Obama expressed his hope for a peaceful resolution to the fighting in Homs and Aleppo Governorates."
-    out = geo.geoparse_doc(text) 
+    out = geo.geoparse_doc(text)
     assert out['geolocated_ents'][1]['geonameid'] == "169575" # Homs (governorate)
     assert out['geolocated_ents'][2]['geonameid'] == "170062" # Aleppo  (governorate)
-    
+
 
 @pytest.mark.skip(reason="messes up on capital-D District")
 def test_district_upper_term(geo):
     text = "Afghanistan: Southern Radio, Television Highlights 22 February 2021. He added: 'Ten Taliban, including four Pakistani Nationals, were killed in clashes between the commandos and Taliban in Arghistan District on the night of 21 February."
     out = geo.geoparse_doc(text)
     #print(out)
-    assert out['geolocated_ents'][0]['search_name'] == "Afghanistan" 
+    assert out['geolocated_ents'][0]['search_name'] == "Afghanistan"
     assert out['geolocated_ents'][1]['feature_code'] == "ADM2"
     assert out['geolocated_ents'][1]['geonameid'] == "7053299"  # Arghistan district
 
 def test_district_lower_term(geo):
     """Same as above, but lower case district"""
     text = "Afghanistan: Southern Radio, Television Highlights 22 February 2021. He added: 'Ten Taliban, including four Pakistani Nationals, were killed in clashes between the commandos and Taliban in Arghistan district on the night of 21 February."
-    out = geo.geoparse_doc(text) 
-    assert out['geolocated_ents'][0]['search_name'] == "Afghanistan" 
+    out = geo.geoparse_doc(text)
+    assert out['geolocated_ents'][0]['search_name'] == "Afghanistan"
     assert out['geolocated_ents'][0]['feature_code'] == "PCLI"
     assert out['geolocated_ents'][0]['geonameid'] == "1149361"
     # assert out['geolocated_ents'][1]['feature_code'] == "ADM2"
@@ -66,32 +67,32 @@ def test_district_lower_term(geo):
 
 def test_miss_oxford(geo):
     text = "Ole Miss is located in Oxford."
-    out = geo.geoparse_doc(text) 
-    assert out['geolocated_ents'][0]['admin1_name'] == "Mississippi" 
-    assert out['geolocated_ents'][0]['geonameid'] == "4440076" 
+    out = geo.geoparse_doc(text)
+    assert out['geolocated_ents'][0]['admin1_name'] == "Mississippi"
+    assert out['geolocated_ents'][0]['geonameid'] == "4440076"
 
 def test_uk_oxford(geo):
     text = "Oxford University, in the town of Oxford, is the best British university."
-    out = geo.geoparse_doc(text) 
-    assert out['geolocated_ents'][0]['geonameid'] == "2640729" 
+    out = geo.geoparse_doc(text)
+    assert out['geolocated_ents'][0]['geonameid'] == "2640729"
 
 def test_uk_oxford2(geo):
     text = "Oxford is home to Oxford University, one of the best universities in the world."
-    out = geo.geoparse_doc(text) 
-    assert out['geolocated_ents'][0]['geonameid'] == "2640729" 
+    out = geo.geoparse_doc(text)
+    assert out['geolocated_ents'][0]['geonameid'] == "2640729"
 
 def test_multi_sent(geo):
     text = """Gangster Kulveer Singh and his accomplice, Chamkaur Singh, were shot dead at Naruana village in Bathinda district on Wednesday morning.  Police said the two were shot dead at Singh's house at his native village by another accomplice, Manpreet Singh Manna, who also sustained a bullet injury and was undergoing treatment at the Bathinda Civil Hospital."""
-    out = geo.geoparse_doc(text) 
+    out = geo.geoparse_doc(text)
 
 def test_prague(geo):
     text = "A group of settlers in Oklahoma named their new town Prague."
-    out = geo.geoparse_doc(text) 
+    out = geo.geoparse_doc(text)
     assert out['geolocated_ents'][0]['feature_code'] == "ADM1"
     assert out['geolocated_ents'][1]['admin1_name'] == "Oklahoma"
 
     text = "Barack Obama gave a speech on nuclear weapons in Prague."
-    out = geo.geoparse_doc(text) 
+    out = geo.geoparse_doc(text)
     assert out['geolocated_ents'][0]['feature_code'] == "PPLC"
     assert out['geolocated_ents'][0]['country_code3'] == "CZE"
 
@@ -111,11 +112,11 @@ def test_double_event(geo):
     """
     text = """A group of bandits were arrested in Nigeria earlier this month."""
     out = geo.geoparse_doc(text, "arrest")
-    assert out['event_location_raw'] == "Nigeria" 
+    assert out['event_location_raw'] == "Nigeria"
     text = """A group of bandits were arrested in Nigeria earlier this month. "We are working together to see what we can do. We don't know what the bandits will say. "They may call for a ransom and will go for negotiation. We have agreed with parents to supervise in prayers and look up to God in this matter."
 Jangadi also said the management of the school had informed the government about the incident adding that the government had assured that everything will be done to rescue the students. Later on, police arrested a group of rebels in Liberia."""
     out = geo.geoparse_doc(text, "arrest")
-    assert out['event_location_raw'] == "Liberia" 
+    assert out['event_location_raw'] == "Liberia"
 
 
 def test_event_loc2(geo):
@@ -143,7 +144,7 @@ VILNIUS, Jul 07, BNS – Lithuanian and Ukrainian President Gitanas Nauseda and 
 def test_geneva(geo):
     text = "On June 16, Russian President Vladimir Putin and his counterpart Joe Biden held talks in Geneva."
     out = geo.geoparse_doc(text)
-    assert out['geolocated_ents'][-1]['country_code3'] == "CHE" 
+    assert out['geolocated_ents'][-1]['country_code3'] == "CHE"
 
 def test_geneva_il(geo):
     text = "On June 16, Russian President Vladimir Putin and his counterpart Joe Biden held talks in Geneva, Illinois."
@@ -151,7 +152,26 @@ def test_geneva_il(geo):
     assert out['geolocated_ents'][0]['geonameid'] == "4893591"
 
 
- 
+def test_known_country(geo):
+    text = "Thomas Edison once lived in Princeton, NJ"
+
+    out = geo.geoparse_doc(text, include_countries=['USA'], exclude_countries=['CAN'])
+    assert out['geolocated_ents'][0]['country_code3'] == "USA"
+
+    out = geo.geoparse_doc(text, exclude_countries=['USA'])
+    assert out['geolocated_ents'][0]['country_code3'] == "CAN"
+
+    out = geo.geoparse_doc(text, include_countries=['SYR'])
+    for item in out['geolocated_ents']:
+        assert item.get('country_code3', None) is None
+
+    text = "Lots of damage done in some of the key areas in the San Jose, Philippines"
+    out = geo.geoparse_doc(text, include_countries=['PHL'])
+    assert out['geolocated_ents'][0]['country_code3'] == "PHL"
+
+    text = "He lived initially in Calgary and later in the city of Berut."
+    out = geo.geoparse_doc(text, include_countries=['PAK','CAN'])
+    assert_array_equal([loc['country_code3'] for loc in out['geolocated_ents']], ['CAN', 'PAK'])
 
 
 ###### Testing specific components #####
@@ -163,7 +183,7 @@ def test_adm1_count(geo):
             {"es_choices":[
                 {"admin1_name": "MA"}]},
             {"es_choices":[{"admin1_name": "MA"}]}]
-    adm1_counts = es_utils.make_admin1_counts(out) 
+    adm1_counts = es_utils.make_admin1_counts(out)
     assert adm1_counts['MA'] == 1.0
     assert adm1_counts['England'] == float(1/3)
 
