@@ -459,9 +459,10 @@ class Geoparser:
                 if len(scores) == 0:
                     logger.debug("No scores found.")
                     continue
-                if np.argmax(scores) == len(scores) - 1:
-                    logger.debug("Picking final ''null'' result.")
-                    continue
+                    # Commenting out the next 3 lines because of #https://github.com/semandex/mordecai3/issues/13
+                # if np.argmax(scores) == len(scores) - 1:
+                #     logger.debug("Picking final ''null'' result.")
+                #     continue
                 results = sorted(results, key=lambda k: -k['score'])
                 if results and debug==False:
                     logger.debug("Picking top predicted result")

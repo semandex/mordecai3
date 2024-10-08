@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='mordecai3',
-    version='3.0.0a.3',
+    version='3.0.0a.4',
     url='http://github.com/ahalterman/mordecai3/',
     author='Andy Halterman',
     author_email='ahalterman0@gmail.com',

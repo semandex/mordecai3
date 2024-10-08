@@ -68,13 +68,15 @@ def test_district_lower_term(geo):
 def test_miss_oxford(geo):
     text = "Ole Miss is located in Oxford."
     out = geo.geoparse_doc(text)
-    assert out['geolocated_ents'][0]['admin1_name'] == "Mississippi"
-    assert out['geolocated_ents'][0]['geonameid'] == "4440076"
+    assert len(out['geolocated_ents']) == 2
+    assert out['geolocated_ents'][1]['admin1_name'] == "Mississippi"
+    assert out['geolocated_ents'][1]['geonameid'] == "4440076"
 
 def test_uk_oxford(geo):
     text = "Oxford University, in the town of Oxford, is the best British university."
     out = geo.geoparse_doc(text)
-    assert out['geolocated_ents'][0]['geonameid'] == "2640729"
+    assert len(out['geolocated_ents']) == 2
+    assert out['geolocated_ents'][1]['geonameid'] == "2640729"
 
 def test_uk_oxford2(geo):
     text = "Oxford is home to Oxford University, one of the best universities in the world."
