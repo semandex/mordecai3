@@ -111,3 +111,10 @@ If you use Mordecai 3, please cite:
 ## Acknowledgements
 
 This work was sponsored by the Political Instability Task Force (PITF). The PITF is funded by the Central Intelligence Agency. The views expressed in this here are the authors' alone and do not represent the views of the US Government.
+
+# Step to release this library 
+- Change the version in `setup.py` script
+- Run `pytest` to make sure all test passes
+```shell
+python setup.py sdist upload -r nexus
+```
