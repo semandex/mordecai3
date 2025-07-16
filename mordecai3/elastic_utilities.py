@@ -5,8 +5,7 @@ from collections import Counter
 
 import jellyfish
 import numpy as np
-from opensearchpy import OpenSearch
-from opensearch_dsl import Q, Search
+from opensearchpy import OpenSearch,Q,Search
 
 GEO_INDEX_NAME = 'geonames'
 OPENSEARCH_HOST = 'localhost'

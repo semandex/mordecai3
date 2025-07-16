@@ -1,5 +1,9 @@
 ## Mordecai3 Changes
 
+### 3.0.0a.5
+- Remove the dependency on opensearch-dsl and upgrade opensearch-py to 3.0.0
+- Also upgrade torch min version to 2.7.0
+
 ### 3.0.0a.4
 - Fix the issue with some perfect match being dropped ( https://github.com/semandex/mordecai3/issues/13 )
 
