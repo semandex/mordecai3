@@ -2,8 +2,7 @@ import numpy as np
 import spacy
 import streamlit as st
 import torch
-from opensearchpy import OpenSearch
-from opensearch_dsl import Search
+from opensearchpy import OpenSearch, Search
 from spacy.language import Language
 from spacy.tokens import Token
 from torch_model import geoparse_model

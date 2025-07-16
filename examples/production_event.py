@@ -3,8 +3,7 @@ import pandas as pd
 import spacy
 import streamlit as st
 import torch
-from opensearchpy import OpenSearch
-from opensearch_dsl import Search
+from opensearchpy import OpenSearch, Search
 from torch.utils.data import DataLoader
 
 import mordecai3.elastic_utilities as es_util
