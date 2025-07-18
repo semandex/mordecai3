@@ -120,7 +120,20 @@ def doc_to_ex_expanded(doc):
     data: list of dicts
     """
     data = []
-    doc_tensor = np.mean(np.vstack([i._.tensor.data for i in doc]), axis=0)
+    # doc_tensor = np.mean(np.vstack([i._.tensor.data for i in doc]), axis=0)
+    valid_tensors = []
+    for i in doc:
+        if hasattr(i._, 'tensor') and i._.tensor is not None:
+            tensor_data = i._.tensor.data
+            if tensor_data is not None and hasattr(tensor_data, 'shape') and tensor_data.shape[0] > 0:
+                valid_tensors.append(tensor_data)
+
+    if valid_tensors:
+        doc_tensor = np.mean(np.vstack(valid_tensors), axis=0)
+    else:
+        # Handle case where no tokens have tensors - adjust dimension as needed
+        return data
+
     # the "loc_ents" are the ones we use for context. NORPs are useful for context,
     # but we don't want to geoparse them. Anecdotally, FACs aren't so useful for context,
     # but we do want to geoparse them.

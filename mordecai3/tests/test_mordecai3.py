@@ -140,7 +140,19 @@ def test_index_error(geo):
 
 VILNIUS, Jul 07, BNS – Lithuanian and Ukrainian President Gitanas Nauseda and Volodymyr Zelensky will open the Ukraine Reform Conference in Vilnius on Wednesday.\nInternational partners and Ukraine's representatives will discuss the country's reform achievements and challenges, as well as confirm the international community's support for Ukraine's sovereignty, territorial integrity and the reform process.\nPlans for Ukraine's European integrations up to 2030 should also be defined.\nDuring the event, the presidents will turn to the international community, seeking its attention and support for Ukraine's reforms on its path towards the European Union and NATO.\nThis year's conference will also discuss ways to bolster democratic institutions, the rule of law, fight against corruption, social and economic development issues.\nThe conference will take place two days and will be attended by Ukrainian Prime Minister Denys Shmyhal, other politicians and officials, experts, European Commissioner for Neighborhood and Enlargement Oliver Varhelyi, Matti Maasik, head of the EU Delegation to Ukraine, representatives of the US administration, NATO, etc."""
     out = geo.geoparse_doc(text)
+    assert out['geolocated_ents'][-1]['country_code3'] == "NCL"
     out = geo.geoparse_doc(text, "express intent to meet")
+    assert out['geolocated_ents'][-1]['country_code3'] == "NCL"
+
+
+def test_index_error2(geo):
+    # adding the event category induced an index error
+    text = """
+            **Status of China's Hypersonic Glide Vehicles**. 
+            Although the provided context does not directly address China's hypersonic glide vehicle program, we can infer some key aspects based on available publicly available information up until 2023.
+        """
+    out = geo.geoparse_doc(text)
+    assert out['geolocated_ents'][-1]['country_code3'] == "CHN"
 
 
 def test_geneva(geo):
