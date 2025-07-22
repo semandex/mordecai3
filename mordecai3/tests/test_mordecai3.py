@@ -282,3 +282,18 @@ def test_long_text_for_location(geo):
     out = geo.geoparse_doc(text, include_countries=['PHL'])
     assert out['geolocated_ents'][0] is not None
 
+def test_valid_key_for_country(geo):
+    text = """
+    Just testing from USA
+    """
+    out = geo.geoparse_doc(text)
+    assert out['geolocated_ents'] is not None
+
+
+def test_invalid_key_for_country(geo):
+    text = """
+    All permits are in place to commence mining with the exception of a permit to transport natural gas that will be used to power the separation facility. The rights of way for a pipeline must be approved by the Bureau of Land Management (BLM) and the pipeline permit by Federal Energy Regulatory Commission (FERC). In the meantime, Molycorp will truck in liquid natural gas for its energy source until the pipeline is approved.39
+    """
+    out = geo.geoparse_doc(text)
+    assert out['geolocated_ents'] is not None
+

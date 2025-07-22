@@ -65,12 +65,15 @@ class ProductionData(Dataset):
     def create_country_codes(self, es_data):
         all_country_codes = []
         for ex in es_data:
-            country_code_raw = [i['country_code3'] for i in ex['es_choices'][0:self.max_choices]]
-            country_code_raw += ['NULL'] * (self.max_choices - len(country_code_raw))
-            country_code_raw = country_code_raw[0:self.max_choices]
-            country_codes = [self.country_dict[i] for i in country_code_raw]
-            country_codes = np.array(country_codes, dtype="int")
-            all_country_codes.append(country_codes)
+            try:
+                country_code_raw = [i['country_code3'] for i in ex['es_choices'][0:self.max_choices]]
+                country_code_raw += ['NULL'] * (self.max_choices - len(country_code_raw))
+                country_code_raw = country_code_raw[0:self.max_choices]
+                country_codes = [self.country_dict[i] for i in country_code_raw]
+                country_codes = np.array(country_codes, dtype="int")
+                all_country_codes.append(country_codes)
+            except ValueError:
+                pass
         all_country_codes = np.array(all_country_codes).astype(np.int32)
         return all_country_codes
 
