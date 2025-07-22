@@ -121,12 +121,7 @@ def doc_to_ex_expanded(doc):
     """
     data = []
     # doc_tensor = np.mean(np.vstack([i._.tensor.data for i in doc]), axis=0)
-    valid_tensors = []
-    for i in doc:
-        if hasattr(i._, 'tensor') and i._.tensor is not None:
-            tensor_data = i._.tensor.data
-            if tensor_data is not None and hasattr(tensor_data, 'shape') and tensor_data.shape[0] > 0:
-                valid_tensors.append(tensor_data)
+    valid_tensors = get_valid_tensors(doc)
 
     if valid_tensors:
         doc_tensor = np.mean(np.vstack(valid_tensors), axis=0)
@@ -140,7 +135,8 @@ def doc_to_ex_expanded(doc):
     loc_ents = [ent for ent in doc.ents if ent.label_ in ['GPE', 'LOC', 'EVENT_LOC', 'NORP']]
     for ent in doc.ents:
         if ent.label_ in ['GPE', 'LOC', 'EVENT_LOC', 'FAC', 'ORG']:
-            tensor = np.mean(np.vstack([i._.tensor.data for i in ent]), axis=0)
+            valid_ent_tensors = get_valid_tensors(ent)
+            tensor = np.mean(np.vstack(valid_ent_tensors), axis=0)
             other_locs = [i for e in loc_ents for i in e if i not in ent]
             in_rel = guess_in_rel(ent)
             #print("detected relation: ", ent.text, "-->", in_rel)
@@ -158,6 +154,17 @@ def doc_to_ex_expanded(doc):
                 "end_char": ent[-1].idx + len(ent[-1].text)}
             data.append(d)
     return data
+
+
+def get_valid_tensors(spacy_doc):
+    valid_tensors = []
+    for i in spacy_doc:
+        if hasattr(i._, 'tensor') and i._.tensor is not None:
+            tensor_data = i._.tensor.data
+            if tensor_data is not None and hasattr(tensor_data, 'shape') and tensor_data.shape[0] > 0:
+                valid_tensors.append(tensor_data)
+    return valid_tensors
+
 
 def load_hierarchy(asset_path):
     fn = os.path.join(asset_path, "hierarchy.txt")
@@ -384,8 +391,14 @@ class Geoparser:
         >>> text = "The earthquake struck in the city of Christchurch, New Zealand."
         >>> geoparser.geoparse_doc(text)
         """
-        if type(text) is str:   
-            doc = self.nlp(text)
+
+        cln_text = text
+        if type(text) is str:
+            cln_text = re.sub(r'[^\w\s\.\,\!\?\;\:\-\(\)\'\"]', ' ', text)
+            cln_text = re.sub(r'\s+', ' ', cln_text)
+
+        if type(text) is str:
+            doc = self.nlp(cln_text)
         elif type(text) is spacy.tokens.doc.Doc:
             doc = text
         else:
@@ -412,7 +425,7 @@ class Geoparser:
             question = f"Where did {plover_cat.lower()} happen?"
             QA_input = {
                     'question': question,
-                    'context':text
+                    'context':cln_text
                 }
             res = self.trf(QA_input)
             event_doc = add_event_loc(doc, res)
