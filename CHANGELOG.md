@@ -1,5 +1,8 @@
 ## Mordecai3 Changes
 
+### 3.0.0a.7
+- Fix the issue with text containing special characters failing in extracting locations [#19]
+
 ### 3.0.0a.6
 - Fix the issue with text containing `\n` failing in getting the location after the upgrades
 
