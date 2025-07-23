@@ -118,3 +118,7 @@ This work was sponsored by the Political Instability Task Force (PITF). The PITF
 ```shell
 python setup.py sdist upload -r nexus
 ```
+Or after running `setup.py sdist`
+```shell
+twine upload --repository nexus dist/*
+```
