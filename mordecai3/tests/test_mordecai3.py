@@ -238,3 +238,62 @@ def test_adm1_country_lookup(geo):
     res = es_utils.get_country_by_name("Syria", geo.conn)
     assert res['country_code3'] == "SYR"
     assert res['feature_code'] == "PCLI"
+
+def test_long_text_for_location(geo):
+    text = """The image presents a comprehensive overview of health and medical services in Ormoc City, Philippines, following Typhoon Yolanda (Haiyan) in November 2013.
+
+        **Health Infrastructure**
+
+        *   LGU Hospital (Ormoc District Hospital): partially functional
+        *   Private Hospitals:
+            *   OSPA Farmers Medical Center: not functional
+            *   Gatchalian Hospital; Maternity and Children's Hospital: partially functional
+            *   Doctors Hospital: fully functional
+            *   RHUs (Curva, Linao, Cogon, Ipil [partially damaged], Valencia): functional
+            *   San Pablo District Hospital: completely damaged
+            *   BHS in Ormoc City: 34 in greater Ormoc completely damaged
+
+        **Foreign Support**
+
+        *   MERCY MALAYSIA at Ormoc District Hospital providing patient services, operating mobile clinics and serving local communities. Also at Valencia Rural Health Center. Supporting the Medevac services which being operated/ provided by the Italian and Philippine army. The rehabilitation still underway at Ormoc District Hospital.
+        *   SWISS HUMANITARIAN AID UNIT Over 1250 tetanus shots given to Ormoc District Hospital, in addition to other relief supplies donated to the Leyte area.
+        *   MSF-HOLLAND: setting up field unit and sent mobile clinic units
+        *   JOHANNITER GERNAMY, BALAY MINDANAW Medical missions in 6 barangays (San Juan, Liloan, Lao, Linao, Naungan and Nadungholan) and 2 evacuation centers (Ormoc Central Elementary School and Linao Elementary School)
+        *   IFRC-CANADA AND NORWEGIAN at Ormoc District Hospital area with operating theater, maternity wards and inpatient services. Working in collaboration with other teams and Philippines Red Cross.
+        *   Euro Volunteers-France - team is currently in Ormoc City, Leyte
+        *   CANADIAN MEDICAL ASSESSMENT TEAMS(CMAT) based near City Hall. Rotating team joined NGO Plan International and visiting mobile clinics and bangarays. Setting up Field Hospital in city center near CMAT base.
+        *   CHINA AID - sent the Peace Ark,10,000-ton-class fully equipped hospital ship.
+
+        **Local or Other**
+
+        *   THE PHILIPPINE COLLEGE OF PHYSICIANS San Pablo City Medical Society, Chapter,28 medical doctors on site and coordinated by the DOH.
+        *   Philippine College of Physicians (PCP) Southern Luzon Chapter – 25 medical doctors on site and coordinated by DOH
+        *   PHILIPPINE NATIONAL RED CROSS Coordinating with international Red Cross chapters. Operation areas include the Ormoc District Hospital. VIDEO LINK
+
+        **Map**
+
+        A map of the Philippines shows Ormoc City marked with a red circle. Two photos show volunteers from Mercy Malaysia providing medical relief at one of the clinics and Red Cross delivering supplies to communities around Ormoc.
+
+        **Monitoring Status**
+
+        PH Health Atlas—Monitoring as of Nov 30
+        Task Force Yolanda Matrix DOH as of Nov 29
+        Reliefweb APAN"""
+    out = geo.geoparse_doc(text, include_countries=['PHL'])
+    assert out['geolocated_ents'][0] is not None
+
+def test_valid_key_for_country(geo):
+    text = """
+    Just testing from USA
+    """
+    out = geo.geoparse_doc(text)
+    assert out['geolocated_ents'] is not None
+
+
+def test_invalid_key_for_country(geo):
+    text = """
+    All permits are in place to commence mining with the exception of a permit to transport natural gas that will be used to power the separation facility. The rights of way for a pipeline must be approved by the Bureau of Land Management (BLM) and the pipeline permit by Federal Energy Regulatory Commission (FERC). In the meantime, Molycorp will truck in liquid natural gas for its energy source until the pipeline is approved.39
+    """
+    out = geo.geoparse_doc(text)
+    assert out['geolocated_ents'] is not None
+
