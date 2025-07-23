@@ -296,4 +296,13 @@ def test_invalid_key_for_country(geo):
     """
     out = geo.geoparse_doc(text)
     assert out['geolocated_ents'] is not None
+    assert len(out['geolocated_ents']) == 5
+
+
+def test_for_max_depth(geo):
+    text = """
+    On 24 November 1993, it registered with the Russian Ministry of Justice as a socio-political movement under the name “Association of Indigenous Small-numbered Peoples of the North, Siberia and the Far East of the Russian Federation” (RAIPON). In July 1999, the Ministry of Justice of the Russian Federation re-registered the Association as an all-Russian public organization. RAIPON’s charter is available online in Russian (with an English translation attached as an appendix to this report),4 as are its regulations on regional associations.5
+    """
+    out = geo.geoparse_doc(text)
+    assert len(out['geolocated_ents']) == 8
 

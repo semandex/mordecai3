@@ -215,7 +215,8 @@ def _clean_search_name(search_name):
 def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
                 remove_correct=False,
                 include_countries: list[str] | None = None,
-                exclude_countries: list[str] | None = None
+                exclude_countries: list[str] | None = None,
+                max_search_len: int=10
                 ):
     """
     Run an Elasticsearch/geonames query for a single example and add the results
@@ -239,6 +240,8 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
         If provided, it will only return results from the list of countries provided
     exclude_countries: list[str]
         If provided, it will only return results excluding the list of countries provided
+    max_search_len: int
+        maximum length of search text while searching with fuzzy query to avoid getting maxClauseCount error in opensearch
 
     Examples
     --------
@@ -312,9 +315,14 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
 
     if not choices:
         # always do a fuzzy step if nothing came up the first time
+        # if search_name has too many words, it throws an exception in opensearch #
+        enable_fuzzy = fuzzy+1
+        if len(search_name) > max_search_len:
+            enable_fuzzy = 0
+
         q = {"multi_match": {"query": search_name,
                              "fields": ['name', 'alternativenames', 'asciiname'],
-                             "fuzziness" : fuzzy+1,
+                             "fuzziness" : enable_fuzzy,
                             }}
         if limit_types:
             p_filter = Q("term", feature_class="P")
