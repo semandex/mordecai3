@@ -392,13 +392,8 @@ class Geoparser:
         >>> geoparser.geoparse_doc(text)
         """
 
-        cln_text = text
         if type(text) is str:
-            cln_text = re.sub(r'[^\w\s\.\,\!\?\;\:\-\(\)\'\"]', ' ', text)
-            cln_text = re.sub(r'\s+', ' ', cln_text)
-
-        if type(text) is str:
-            doc = self.nlp(cln_text)
+            doc = self.nlp(text)
         elif type(text) is spacy.tokens.doc.Doc:
             doc = text
         else:
@@ -425,7 +420,7 @@ class Geoparser:
             question = f"Where did {plover_cat.lower()} happen?"
             QA_input = {
                     'question': question,
-                    'context':cln_text
+                    'context':text
                 }
             res = self.trf(QA_input)
             event_doc = add_event_loc(doc, res)
