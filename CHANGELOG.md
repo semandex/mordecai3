@@ -1,5 +1,8 @@
 ## Mordecai3 Changes
 
+### 3.0.0a.8
+- Fix the issue with invalid start and end position being returned due to cleaning of the input text [#24]
+
 ### 3.0.0a.7
 - Fix the issue with text containing special characters failing in extracting locations [#19]
 
