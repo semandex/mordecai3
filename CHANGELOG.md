@@ -1,5 +1,8 @@
 ## Mordecai3 Changes
 
+### 3.0.0a.9 [2025/08/14]
+- Add a valid tensor check for `other_locs` array in geoparse.py [#26]
+
 ### 3.0.0a.8
 - Fix the issue with invalid start and end position being returned due to cleaning of the input text [#24]
 

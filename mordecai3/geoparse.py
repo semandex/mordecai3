@@ -141,7 +141,9 @@ def doc_to_ex_expanded(doc):
             in_rel = guess_in_rel(ent)
             #print("detected relation: ", ent.text, "-->", in_rel)
             if other_locs:
-                locs_tensor = np.mean(np.vstack([i._.tensor.data for i in other_locs if i not in ent]), axis=0)
+                # locs_tensor = np.mean(np.vstack([i._.tensor.data for i in other_locs if i not in ent]), axis=0)
+                valid_loc_tensors = get_valid_tensors(other_locs)
+                locs_tensor = np.mean(np.vstack(valid_loc_tensors), axis=0)
             else:
                 locs_tensor = np.zeros(len(tensor))
             d = {"search_name": ent.text,
