@@ -282,6 +282,38 @@ def test_long_text_for_location(geo):
     out = geo.geoparse_doc(text, include_countries=['PHL'])
     assert out['geolocated_ents'][0] is not None
 
+def test_long_text_for_location2(geo):
+    text = """
+    The image presents a satellite view of the Western Pacific region, with an overlay of geographical locations marked by red dots.
+
+At the top of the image, two logos are visible:
+
+*   A circular logo featuring a red background with yellow trim and a white silhouette of a plane at its center.
+*   Another circular logo displaying a red background with yellow trim and a white silhouette of a winged ship at its center.
+
+Below these logos, the title "Western Pacific Tropical Overview" appears in bold red font against a white background.
+
+In the upper-left corner, the text "Image: 13 / 0430 JST" is displayed in small blue font.
+
+A large grid overlays the map, providing a framework for identifying specific regions within the Western Pacific area. The following locations are labeled with red dots:
+
+*   Kunsan (South Korea)
+*   Iwakuni (Japan)
+*   Okinawa (Japan)
+*   Clark AB (Philippines)
+*   Guam
+*   Wake Island
+
+Additionally, several areas are highlighted using orange boxes:
+
+*   TCHA (Taiwan)
+
+This image likely serves as a visual aid for military personnel to track weather patterns and potential threats in the Western Pacific region.
+
+    """
+    out = geo.geoparse_doc(text, include_countries=['PHL'])
+    assert len(out['geolocated_ents']) is not 0
+
 def test_valid_key_for_country(geo):
     text = """
     Just testing from USA
