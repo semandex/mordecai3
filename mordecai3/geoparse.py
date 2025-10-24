@@ -386,7 +386,17 @@ class Geoparser:
             Includes the following keys:
             - "doc_text": a string of the input text
             - "event_location_raw": str, the place name of the 'event location' (if provided)
-            - "geolocated_ents": list of dicts, each dict is a geoparsed location
+            - "all_entities": list of dicts, each dict contains information about all named entities found in the document, including:
+                * text: the entity text
+                * label: the NER label (GPE, LOC, PERSON, etc.)
+                * start_char/end_char: character positions in the document
+                * processed: boolean indicating if this entity type was processed for geoparsing
+            - "unmatched_entities": list of dicts, each dict contains entities that could not be matched in OpenSearch, including:
+                * search_name: the place name that was searched
+                * start_char/end_char: character positions
+                * sent: the sentence containing the entity (if available)
+                * reason: explanation of why no match was found
+            - "geolocated_ents": list of dicts, each dict is the best geoparsed location for each processed entity
 
         Example
         -------
@@ -430,17 +440,67 @@ class Geoparser:
             event_doc = doc
 
         best_list = []
+        all_entities = []
+        unmatched_entities = []
+
+        # Extract all named entities from the document
+        for ent in doc.ents:
+            entity_info = {
+                "text": ent.text,
+                "label": ent.label_,
+                "start_char": ent.start_char,
+                "end_char": ent.end_char,
+                "processed": ent.label_ in ['GPE', 'LOC', 'EVENT_LOC', 'FAC', 'ORG']
+            }
+            all_entities.append(entity_info)
+
         output = {"doc_text": doc.text,
                  "event_location": '',
+                 "all_entities": all_entities,
+                 "unmatched_entities": unmatched_entities,
                  "geolocated_ents": []}
         if len(doc_ex) == 0:
             return output
         elif len(es_data) == 0:
+            # All processed entities failed to get OpenSearch matches
+            for doc_entity in doc_ex:
+                unmatched_entity = {
+                    "search_name": doc_entity['search_name'],
+                    "start_char": doc_entity['start_char'],
+                    "end_char": doc_entity['end_char'],
+                    "sent": doc_entity['sent'],
+                    "reason": "No OpenSearch results found"
+                }
+                unmatched_entities.append(unmatched_entity)
             return output
         else:
+            # Check for entities that didn't get OpenSearch matches
+            es_entity_names = {ent['search_name'] for ent in es_data}
+            for doc_entity in doc_ex:
+                if doc_entity['search_name'] not in es_entity_names:
+                    unmatched_entity = {
+                        "search_name": doc_entity['search_name'],
+                        "start_char": doc_entity['start_char'],
+                        "end_char": doc_entity['end_char'],
+                        "sent": doc_entity['sent'],
+                        "reason": "No OpenSearch results found"
+                    }
+                    unmatched_entities.append(unmatched_entity)
+
             # Iterate over all the entities in the document
             for (ent, pred) in zip(es_data, pred_val):
                 logger.debug("**Place name**: {}".format(ent['search_name']))
+
+                # Check if this entity has no OpenSearch choices (empty results)
+                if not ent.get('es_choices') or len(ent.get('es_choices', [])) == 0:
+                    unmatched_entity = {
+                        "search_name": ent['search_name'],
+                        "start_char": ent['start_char'],
+                        "end_char": ent['end_char'],
+                        "reason": "Empty OpenSearch results"
+                    }
+                    unmatched_entities.append(unmatched_entity)
+
                 # if the last one is the argmax, then the model thinks that no answer is correct
                 # so return blank
                 if pred[-1] == pred.max():
@@ -451,10 +511,22 @@ class Geoparser:
                     best_list.append(best)
                     continue
 
-                for n, score in enumerate(pred):
-                    if n < len(ent['es_choices']):
-                        ent['es_choices'][n]['score'] = score.item() # torch tensor --> float
-                results = [e for e in ent['es_choices'] if 'score' in e.keys()]
+                # for n, score in enumerate(pred):
+                #     if n < len(ent['es_choices']):
+                #         ent['es_choices'][n]['score'] = score.item() # torch tensor --> float
+                # results = [e for e in ent['es_choices'] if 'score' in e.keys()]
+
+                # Safely assign scores to available choices
+                max_choices = min(len(pred), len(ent['es_choices']))
+                for n in range(max_choices):
+                    try:
+                        ent['es_choices'][n]['score'] = float(pred[n])
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Failed to convert score at index {n}: {e}")
+                        ent['es_choices'][n]['score'] = 0.0
+
+                # Filter results that have scores (more efficient)
+                results = ent['es_choices'][:max_choices]
 
                 # this is what the elements of "results" look like
                  #  {'feature_code': 'PPL',
@@ -513,10 +585,14 @@ class Geoparser:
                 i = [i.pop(key) for key in trim_keys if key in i.keys()]
             output = {"doc_text": doc.text,
                  "event_location_raw": ''.join([i.text_with_ws for i in event_doc.ents if i.label_ == "EVENT_LOC"]).strip(),
-                 "geolocated_ents": best_list} 
+                 "all_entities": all_entities,
+                 "unmatched_entities": unmatched_entities,
+                 "geolocated_ents": best_list}
         else:
             output = {"doc_text": doc.text,
                  "event_location_raw": ''.join([i.text_with_ws for i in event_doc.ents if i.label_ == "EVENT_LOC"]).strip(),
+                 "all_entities": all_entities,
+                 "unmatched_entities": unmatched_entities,
                  "geolocated_ents": best_list}
         return output
 

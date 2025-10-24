@@ -368,4 +368,29 @@ A label near the top reads "5 Miles from AFLD to Camp Downes"
         end = entity.get('end_char')
         assert text1[start:end] == entity.get('search_name'), f"Mismatch for entity: {entity}"
 
+def test_debug_text(geo):
+    text1 = """
+    Level of detail: Unlike Fordū, where the US government provided extensive details about the damage inflicted upon the site following the strike, the information available about the Esfahan tunnel complex is limited, leaving many questions unanswered.
+    Damage assessment: At Fordū, the US government acknowledged the destruction of the centrifuges and facilities, whereas the extent of damage to the Esfahan tunnel complex remains unclear
+    """
+    res = geo.geoparse_doc(text=text1, include_countries=['IRN'])
+    entities = res['geolocated_ents']
+    assert len(entities) != 0
+    assert res['all_entities'] is not None
+    assert len(res['all_entities']) == 6
+    assert res['unmatched_entities'] is not None
+    # `US` in both lines should not match to anything in Iran
+    assert len(res['unmatched_entities']) == 2
+
+    text2 = """
+    Unlike Fordū, the information available about the Esfahan tunnel complex  is limited, leaving many questions unanswered.
+    """
+    res = geo.geoparse_doc(text=text2, include_countries=['IRN'])
+    entities = res['geolocated_ents']
+    assert len(entities) != 0
+    assert res['all_entities'] is not None
+    assert len(res['all_entities']) == 2
+    assert res['unmatched_entities'] is not None
+    assert len(res['unmatched_entities']) == 0
+
 

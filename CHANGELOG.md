@@ -1,5 +1,9 @@
 ## Mordecai3 Changes
 
+### 3.0.0a.10 [2025/10/XX]
+- Fix the issue with logger not providing logs properly
+- Add more details in the returned response from `geoparse_doc` method 
+
 ### 3.0.0a.9 [2025/08/14]
 - Add a valid tensor check for `other_locs` array in geoparse.py [#26]
 
