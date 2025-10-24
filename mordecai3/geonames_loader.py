@@ -85,9 +85,9 @@ def iso_convert(iso2c):
     try:
         if not iso2c.strip():
             return ""
-        else:
-            iso3c = iso_dict[iso2c]
-            return iso3c
+        
+        iso3c = iso_dict[iso2c]
+        return iso3c
     except KeyError:
         logger.error(f"Bad code: {iso2c}")
         iso3c = "NA"
@@ -166,7 +166,7 @@ class GeoNamesLoader:
             try:
                 coords = row[4] + "," + row[5]
                 country_code3 = iso_convert(row[8])
-                if not country_code3.strip():
+                if not country_code3:
                     continue
 
                 alt_names = list(set(row[3].split(",")))
