@@ -83,8 +83,11 @@ def iso_convert(iso2c):
                 "CS": "SCG", "AN": "ANT", "YU": "YUG"}
 
     try:
-        iso3c = iso_dict[iso2c]
-        return iso3c
+        if not iso2c.strip():
+            return ""
+        else:
+            iso3c = iso_dict[iso2c]
+            return iso3c
     except KeyError:
         logger.error(f"Bad code: {iso2c}")
         iso3c = "NA"
@@ -163,6 +166,9 @@ class GeoNamesLoader:
             try:
                 coords = row[4] + "," + row[5]
                 country_code3 = iso_convert(row[8])
+                if not country_code3.strip():
+                    continue
+
                 alt_names = list(set(row[3].split(",")))
                 # so annoying...add "US" as an alt name for USA
                 if str(row[0]) == "6252001":
@@ -222,8 +228,8 @@ class GeoNamesLoader:
                 print(error, row)
                 error_count += 1
 
-        logger.info('Good entry count:', good_count)
-        logger.info('Exception count:', error_count)
+        logger.info(f"Good entry count: {good_count}")
+        logger.info(f"Exception count: {error_count}")
 
     def create_index_with_mapping(self):
         if self.os_client.indices.exists(index=self.index_name):
@@ -261,7 +267,7 @@ class GeoNamesLoader:
             }
             """
 
-        logger.info("loading mapping as ", os_mapping)
+        logger.info(f"loading mapping as {os_mapping}")
         self.os_client.indices.create(index=self.index_name, body=os_mapping)
 
     def data_check(self)-> bool:
@@ -277,10 +283,8 @@ class GeoNamesLoader:
         self.create_index_with_mapping()
 
         adm1_dict = read_admin_codes(self.adm1_file)
-        # logger.info("Got admin1 dict as " , adm1_dict)
 
         adm2_dict = read_admin_codes(self.adm2_file)
-        # logger.info("Got admin2 dict as " , adm2_dict)
 
         geocode_file = open(self.geocode_file, 'rt', encoding='utf-8')
         csv_reader = csv.reader(geocode_file, delimiter='\t')
@@ -309,4 +313,4 @@ if __name__ == "__main__":
     loader.load_geocodes()
 
     e = (time.time() - t) / 60
-    logger.info("Total tile loading in minutes: ", e)
+    logger.info(f"Total tile loading in minutes: {e}")
