@@ -394,7 +394,6 @@ class Geoparser:
             - "unmatched_entities": list of dicts, each dict contains entities that could not be matched in OpenSearch, including:
                 * search_name: the place name that was searched
                 * start_char/end_char: character positions
-                * sent: the sentence containing the entity (if available)
                 * reason: explanation of why no match was found
             - "geolocated_ents": list of dicts, each dict is the best geoparsed location for each processed entity
 
@@ -468,7 +467,6 @@ class Geoparser:
                     "search_name": doc_entity['search_name'],
                     "start_char": doc_entity['start_char'],
                     "end_char": doc_entity['end_char'],
-                    "sent": doc_entity['sent'],
                     "reason": "No OpenSearch results found"
                 }
                 unmatched_entities.append(unmatched_entity)
@@ -482,7 +480,6 @@ class Geoparser:
                         "search_name": doc_entity['search_name'],
                         "start_char": doc_entity['start_char'],
                         "end_char": doc_entity['end_char'],
-                        "sent": doc_entity['sent'],
                         "reason": "No OpenSearch results found"
                     }
                     unmatched_entities.append(unmatched_entity)
