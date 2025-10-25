@@ -492,7 +492,7 @@ class Geoparser:
                 logger.debug("**Place name**: {}".format(ent['search_name']))
 
                 # Check if this entity has no OpenSearch choices (empty results)
-                if not ent.get('es_choices') or len(ent.get('es_choices', [])) == 0:
+                if not ent.get('es_choices'):
                     unmatched_entity = {
                         "search_name": ent['search_name'],
                         "start_char": ent['start_char'],
@@ -520,7 +520,10 @@ class Geoparser:
                 max_choices = min(len(pred), len(ent['es_choices']))
                 for n in range(max_choices):
                     try:
-                        ent['es_choices'][n]['score'] = float(pred[n])
+                        try:
+                            ent['es_choices'][n]['score'] = float(pred[n].item())
+                        except AttributeError:
+                            ent['es_choices'][n]['score'] = float(pred[n])
                     except (ValueError, TypeError) as e:
                         logger.warning(f"Failed to convert score at index {n}: {e}")
                         ent['es_choices'][n]['score'] = 0.0
