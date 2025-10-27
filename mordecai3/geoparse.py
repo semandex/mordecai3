@@ -517,11 +517,9 @@ class Geoparser:
                 max_choices = min(len(pred), len(ent['es_choices']))
                 for n in range(max_choices):
                     try:
-                        try:
-                            ent['es_choices'][n]['score'] = float(pred[n].item())
-                        except AttributeError:
-                            ent['es_choices'][n]['score'] = float(pred[n])
-                    except (ValueError, TypeError) as e:
+                        value = pred[n].item() if hasattr(pred[n], 'item') else pred[n]
+                        ent['es_choices'][n]['score'] = float(value)
+                    except (AttributeError, ValueError, TypeError) as e:
                         logger.warning(f"Failed to convert score at index {n}: {e}")
                         ent['es_choices'][n]['score'] = 0.0
 
