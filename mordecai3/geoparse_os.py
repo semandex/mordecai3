@@ -1,15 +1,11 @@
-
-import logging
-import os
 import re
 
 import numpy as np
-import pkg_resources
 import spacy
 from opensearchpy import Q
 import jellyfish
 
-from mordecai3.elastic_utilities import get_adm1_country_entry
+from mordecai3.elastic_utilities import get_adm1_country_entry, get_country_by_name
 from mordecai3.geoparse import Geoparser, doc_to_ex_expanded
 
 
