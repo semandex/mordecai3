@@ -175,7 +175,7 @@ def _clean_search_name(search_name):
     search_name = re.sub("[Cc]ounty", "", search_name).strip()
     search_name = re.sub("[Rr]egion", "", search_name).strip()
     search_name = re.sub("[Pp]rovince", "", search_name).strip()
-    search_name = re.sub("[Tt]territory", "", search_name).strip()
+    search_name = re.sub("[Tt]erritory", "", search_name).strip()
     search_name = re.sub("[Bb]ranch", "", search_name).strip()
     search_name = re.sub("'s$", "", search_name).strip()
     # super hacky!! This one is the most egregious
