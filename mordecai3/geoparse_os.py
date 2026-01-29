@@ -9,14 +9,7 @@ import spacy
 from opensearchpy import Q
 import jellyfish
 
-from mordecai3.elastic_utilities import (
-    get_adm1_country_entry,
-    get_country_entry,
-    get_entry_by_id,
-    os_conn,
-    GEO_INDEX_NAME
-)
-
+from mordecai3.elastic_utilities import get_adm1_country_entry
 from mordecai3.geoparse import Geoparser, doc_to_ex_expanded
 
 
@@ -26,7 +19,8 @@ class Geoparser_OS(Geoparser):
                      include_countries: list[str] | None = None,
                      exclude_countries: list[str] | None = None,
                      os_match_threshold=1.0,
-                     os_fuzziness=0):
+                     os_fuzziness=0,
+                     **kwargs):
         """
         Geoparse a document.
 
