@@ -27,7 +27,7 @@ class Geoparser_OS(Geoparser):
         include_countries : list[str]
             If provided, the geoparser will only consider locations in the given list of countries.
         exclude_countries : list[str]
-            If provided, the geoparser will exclyude locations in the given list of countries.
+            If provided, the geoparser will exclude locations in the given list of countries.
         os_match_threshold: float
             The minimum similarity threshold (0.0-1.0) for OpenSearch clause matching. Gets turned into a percentage
             and passed as OpenSearch's "minimum_should_match" parameter. Defaults to 1.0 (100%) for high precision.
