@@ -354,7 +354,8 @@ class Geoparser:
                      trim=True,
                      include_countries: list[str] | None = None,
                      exclude_countries: list[str] | None = None,
-                     max_choices=50):
+                     max_choices=50,
+                     **kwargs):
         """
         Geoparse a document.
 

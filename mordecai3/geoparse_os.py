@@ -40,6 +40,7 @@ class Geoparser_OS(Geoparser):
         output : dict
             Includes the following keys:
             - "doc_text": a string of the input text
+            - "event_location_raw":
             - "all_entities": list of dicts, each dict contains information about all named entities found in the document, including:
                 * text: the entity text
                 * label: the NER label (GPE, LOC, PERSON, etc.)
@@ -116,6 +117,8 @@ class Geoparser_OS(Geoparser):
             hits = res.hits.hits
             for c, h in zip(choices, hits):
                 c['es_score'] = h['_score']
+                # Use a constant dummy score for compatibility with downstream validation logic
+                c['score'] = 1.0
 
             # Put future filtering here?
 
@@ -137,6 +140,7 @@ class Geoparser_OS(Geoparser):
                 unmatched_entities.append(unmatched_entity)
 
         output = {"doc_text": doc.text,
+                  "event_location_raw": '',
                   "all_entities": all_entities,
                   "unmatched_entities": unmatched_entities,
                   "geolocated_ents": geolocated_ents}
