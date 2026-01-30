@@ -8,9 +8,10 @@ old_models/
 *.ipynb
 mordecai_geo_results*
 ner/*
-_*
 .vscode/
 tmp/
 .idea
 build
 dist
+__pycache__/
+*.egg-info/

@@ -1,5 +1,8 @@
 ## Mordecai3 Changes
 
+### 3.0.0a.11 [2026/01/29]
+- Added Geoparser_OS class to enable trimmed down version of GeoParse with OpenSearch client
+
 ### 3.0.0a.10 [2025/10/XX]
 - Fix the issue with logger not providing logs properly
 - Add more details in the returned response from `geoparse_doc` method 
