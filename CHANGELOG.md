@@ -1,5 +1,8 @@
 ## Mordecai3 Changes
 
+### 3.0.0a.13 [2026/01/30]
+- Added kwargs to Geoparser.geoparse_doc
+
 ### 3.0.0a.12 [2026/01/30]
 - Fixed downstream validation issue by adding dummy score to Geoparser_OS
 
