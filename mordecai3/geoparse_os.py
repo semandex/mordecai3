@@ -117,6 +117,7 @@ class Geoparser_OS(Geoparser):
             hits = res.hits.hits
             for c, h in zip(choices, hits):
                 c['es_score'] = h['_score']
+                # Use a constant dummy score for compatibility with downstream validation logic
                 c['score'] = 1.0
 
             # Put future filtering here?
