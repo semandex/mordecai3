@@ -4,6 +4,7 @@ import numpy as np
 import spacy
 from opensearchpy import Q
 import jellyfish
+from geojson_pydantic import Polygon
 
 from mordecai3.elastic_utilities import get_adm1_country_entry, get_country_by_name
 from mordecai3.geoparse import Geoparser, doc_to_ex_expanded
@@ -16,6 +17,7 @@ class Geoparser_OS(Geoparser):
                      exclude_countries: list[str] | None = None,
                      os_match_threshold=1.0,
                      os_fuzziness=0,
+                     geojson: Polygon | None = None,
                      **kwargs):
         """
         Geoparse a document.
@@ -83,6 +85,18 @@ class Geoparser_OS(Geoparser):
         # get country filter for OpenSearch
         country_filter = get_country_filter(include_countries, exclude_countries)
 
+        # get polygon filter if geojson provided
+        if geojson:
+            assert len(geojson.coordinates) == 1, "Only single polygon geojsons are supported for geoparsing."
+            polygon_filter = Q(
+                'geo_polygon',
+                coordinates={
+                    'points': geojson.coordinates[0]
+                }
+            )
+        else:
+            polygon_filter = None
+
         # Query OpenSearch for each entity
         unmatched_entities = []
         geolocated_ents = []
@@ -110,6 +124,8 @@ class Geoparser_OS(Geoparser):
             res = self.conn.query(q)
             if country_filter:
                 res = res.filter(country_filter)
+            if polygon_filter:
+                res = res.filter(polygon_filter)
             res = res[0:1].execute()
 
             # get results, add some distances, etc.

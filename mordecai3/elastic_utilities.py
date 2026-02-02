@@ -6,6 +6,7 @@ from collections import Counter
 import jellyfish
 import numpy as np
 from opensearchpy import OpenSearch,Q,Search
+from geojson_pydantic import Polygon
 
 GEO_INDEX_NAME = 'geonames'
 OPENSEARCH_HOST = 'localhost'
@@ -216,7 +217,8 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
                 remove_correct=False,
                 include_countries: list[str] | None = None,
                 exclude_countries: list[str] | None = None,
-                max_words_count: int=5
+                max_words_count: int=5,
+                geojson: Polygon | None = None
                 ):
     """
     Run an Elasticsearch/geonames query for a single example and add the results
@@ -299,6 +301,20 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
         else:
             country_filter = exclude_country_filter
 
+    # get polygon filter if geojson provided
+    if geojson:
+        assert len(geojson.coordinates) == 1, "Only single polygon geojsons are supported for geoparsing."
+        polygon_filter = Q(
+            'geo_polygon',
+            coordinates={
+                'points': geojson.coordinates[0]
+            }
+        )
+        if country_filter: # simplest change is to keep country_filter name
+            country_filter = country_filter & polygon_filter
+        else:
+            country_filter = polygon_filter
+
     if limit_types:
         p_filter = Q("term", feature_class="P")
         a_filter = Q("term", feature_class="A")
@@ -352,14 +368,15 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
 def add_es_data_doc(doc_ex, conn, max_results=50, fuzzy=0, limit_types=False,
                     remove_correct=False,
                     include_countries: list[str] | None = None,
-                    exclude_countries: list[str] | None = None
+                    exclude_countries: list[str] | None = None,
+                    geojson: Polygon | None = None
                     ):
     doc_es = []
     for ex in doc_ex:
         with warnings.catch_warnings():
             try:
                 es = add_es_data(ex, conn, max_results, fuzzy, limit_types, remove_correct, include_countries,
-                                 exclude_countries)
+                                 exclude_countries, geojson=geojson)
                 doc_es.append(es)
             except Warning:
                 continue
