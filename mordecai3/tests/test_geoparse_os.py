@@ -1,6 +1,21 @@
 import pytest
 from mordecai3.geoparse_os import Geoparser_OS
 from mordecai3.elastic_utilities import get_client
+from geojson_pydantic import Polygon
+
+manila_buffer = {
+    "type": "Polygon",
+    "coordinates": [
+        [
+            [122, 15], # North-East
+            [122, 13.5], # South-East
+            [120., 13.5], # South-West
+            [120., 15], # North-West
+            [122, 15]  # Close the loop (same as first point)
+        ]
+    ]
+}
+geojson = Polygon(**manila_buffer)
 
 @pytest.fixture(scope='session')
 def geo_os():
@@ -81,3 +96,46 @@ def test_os_empty_string(geo_os):
 def test_os_non_string_input(geo_os):
     with pytest.raises(ValueError):
         geo_os.geoparse_doc(12345)
+
+def test_os_geojson_polygon_inclusion(geo_os):
+    """
+    Test that Geoparser_OS.geoparse_doc correctly includes locations inside a geojson polygon.
+    """
+    text = "Manila is a major city in the Philippines. Cebu is another city."
+    out = geo_os.geoparse_doc(text, geojson=geojson)
+
+    # Manila should be inside the polygon
+    assert any(ent['search_name'] == 'Manila' for ent in out['geolocated_ents'])
+    # any coordinates should be within the rectangular bounds
+    assert any(ent['lon'] >= 120.0 and ent['lon'] <= 122.0 for ent in out['geolocated_ents'])
+    assert any(ent['lat'] >= 13.5 and ent['lat'] <= 15.0 for ent in out['geolocated_ents'])
+
+def test_os_geojson_polygon_empty(geo_os):
+    """
+    Test that an empty polygon returns no matches.
+    """
+    empty_poly = Polygon(type="Polygon", coordinates=[
+        [
+            [122, 15], # North-East
+            [122, 15], # South-East
+            [122, 15], # South-West
+            [122, 15], # North-West
+            [122, 15]  # Close the loop (same as first point)
+        ]
+    ])
+    text = "Manila is a major city in the Philippines."
+    out = geo_os.geoparse_doc(text, geojson=empty_poly)
+    assert out['geolocated_ents'] == []
+
+def test_os_geojson_polygon_country_filters(geo_os):
+    """
+    Test that include_countries=['PHL'] does not restrict Manila (since polygon already restricts),
+    and exclude_countries=['PHL'] excludes Manila even if inside the polygon.
+    """
+
+    text = "Manila is a major city in the Philippines."
+    # include_countries should not restrict Manila
+    out_inc = geo_os.geoparse_doc(text, geojson=geojson, include_countries=['PHL'])
+    assert any(ent['search_name'] == 'Manila' for ent in out_inc['geolocated_ents']), "Manila should be found with include_countries=['PHL'] and polygon."
+    out_exc = geo_os.geoparse_doc(text, geojson=geojson, exclude_countries=['PHL'])
+    assert out_exc['geolocated_ents'] == [], "Polygon should contain no places where exclude_countries=['PHL']."

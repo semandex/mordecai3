@@ -1,5 +1,8 @@
 ## Mordecai3 Changes
 
+### 3.0.0a.14 [2026/02/03]
+- Added geofencing support via geojson polygons to Geoparser and Geoparser_OS classes
+
 ### 3.0.0a.13 [2026/01/30]
 - Added kwargs to Geoparser.geoparse_doc
 

@@ -1,9 +1,23 @@
 import pytest
 from numpy.testing import assert_array_equal
+from geojson_pydantic import Polygon
 
 from .. import elastic_utilities as es_utils
 from .. import geoparse
 
+manila_buffer = {
+    "type": "Polygon",
+    "coordinates": [
+        [
+            [122, 15], # North-East
+            [122, 13.5], # South-East
+            [120., 13.5], # South-West
+            [120., 15], # North-West
+            [122, 15]  # Close the loop (same as first point)
+        ]
+    ]
+}
+geojson = Polygon(**manila_buffer)
 
 def test_statement_event_loc(geo):
     text = "Speaking from Berlin, President Obama expressed his hope for a peaceful resolution to the fighting in Homs and Aleppo."
@@ -393,4 +407,47 @@ def test_debug_text(geo):
     assert res['unmatched_entities'] is not None
     assert len(res['unmatched_entities']) == 0
 
+def test_geojson_polygon_inclusion(geo):
+    """
+    Test that Geoparser.geoparse_doc correctly includes locations inside a geojson polygon.
+    """
+    text = "Manila is a major city in the Philippines. Cebu is another city."
+    out = geo.geoparse_doc(text, geojson=geojson)
+
+    # Manila should be inside the polygon
+    assert any(ent['search_name'] == 'Manila' for ent in out['geolocated_ents'])
+    # any coordinates should be within the rectangular bounds
+    assert any(ent['lon'] >= 120.0 and ent['lon'] <= 122.0 for ent in out['geolocated_ents'])
+    assert any(ent['lat'] >= 13.5 and ent['lat'] <= 15.0 for ent in out['geolocated_ents'])
+
+def test_geojson_polygon_empty(geo):
+    """
+    Test that an empty polygon returns no matches.
+    """
+    empty_poly = Polygon(type="Polygon", coordinates=[
+        [
+            [122, 15], # North-East
+            [122, 15], # South-East
+            [122, 15], # South-West
+            [122, 15], # North-West
+            [122, 15]  # Close the loop (same as first point)
+        ]
+    ])
+    text = "Manila is a major city in the Philippines."
+    out = geo.geoparse_doc(text, geojson=empty_poly)
+    geolocated_ents = [el for el in out['geolocated_ents'] if 'lat' in el and 'lon' in el]
+    assert geolocated_ents == [], "Polygon should contain no places where exclude_countries=['PHL']."
+
+def test_geojson_polygon_country_filters(geo):
+    """
+    Test that include_countries=['PHL'] does not restrict Manila (since polygon already restricts),
+    and exclude_countries=['PHL'] excludes Manila even if inside the polygon.
+    """
+    text = "Manila is a major city in the Philippines."
+    # include_countries should not restrict Manila
+    out_inc = geo.geoparse_doc(text, geojson=geojson, include_countries=['PHL'])
+    assert any(ent['search_name'] == 'Manila' for ent in out_inc['geolocated_ents']), "Manila should be found with include_countries=['PHL'] and polygon."
+    out_exc = geo.geoparse_doc(text, geojson=geojson, exclude_countries=['PHL'])
+    geolocated_ents = [el for el in out_exc['geolocated_ents'] if 'lat' in el and 'lon' in el]
+    assert geolocated_ents == [], "Polygon should contain no places where exclude_countries=['PHL']."
 

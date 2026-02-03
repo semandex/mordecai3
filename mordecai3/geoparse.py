@@ -8,6 +8,7 @@ import spacy
 import torch
 from opensearchpy import OpenSearch
 from torch.utils.data import DataLoader
+from geojson_pydantic import Polygon
 
 from mordecai3.elastic_utilities import (
     add_es_data_doc,
@@ -355,6 +356,7 @@ class Geoparser:
                      include_countries: list[str] | None = None,
                      exclude_countries: list[str] | None = None,
                      max_choices=50,
+                     geojson: Polygon | None = None,
                      **kwargs):
         """
         Geoparse a document.
@@ -418,7 +420,8 @@ class Geoparser:
         if doc_ex:
             es_data = add_es_data_doc(doc_ex, self.conn, max_results=100,
                                       include_countries=include_countries,
-                                      exclude_countries=exclude_countries)
+                                      exclude_countries=exclude_countries,
+                                      geojson=geojson)
 
             dataset = ProductionData(es_data, max_choices=100)
 

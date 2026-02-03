@@ -122,3 +122,27 @@ Or after running `setup.py sdist`
 ```shell
 twine upload --repository nexus dist/*
 ```
+
+## Geoparsing Observations / Recommendations
+Spotchecking, there are problems with both Geoparser and Geoparser_OS. Some examples available [here](https://docs.google.com/spreadsheets/d/1iVoEUBDZ0qu4hbiQX_FXypOoUb3a7A_f5JBabJ5fizQ/edit?usp=sharing). Feel free to add more examples.
+
+Relying on OpenSearch (Geoparser_OS) gives good looking text results, but tends to incorrectly pick small towns instead of intuitive large cities. Full Mordecai (Geoparser) excludes many obvious matches (e.g., "Angeles City") and picks mismatched text as well (Ormoc Port -> Legaspi Port).
+
+Looking deeper into Mordecai, there are some strange choices in the neural model design:
+- Padding logits should be -inf (probability zero) but seem to be set to a significant probability.
+- The model adds the embeddings from the "other places" and sends them to the model. This seems pretty arbitrary and could lead to weird results since there's not much training data (~6000 samples).
+- In general, considering the wide variety of place types and countries/languages, 6000 training samples seems quite small.
+
+Here are some ideas for improving geoparsing:
+- To the extent possible, use real world text chunks from as many countries as possible.
+- Compare spacy and gliner extraction, possibly train on both.
+- Use a flagship LLM (minimum LLAMA 70B or similar) to generate ground truth for ranking, 50-100k samples (more couldn't hurt). 
+  - Define exactly what behavior we want
+  - Add suitable prompt with some examples. 
+  - Iterate as needed
+- Fix padding issues.
+- Include both cross entropy (correctness) and distance losses (give partial credit for proximity). 
+  - Might need to normalize distances by place type or size. 
+- Use a transformer / attention layer - this should help with redundant place entries that are close to each other. 
+- Check how/what info from OS results are going into the model. 
+- Consider fine tuning embeddings in some fashion. 
