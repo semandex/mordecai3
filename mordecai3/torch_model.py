@@ -11,23 +11,31 @@ from pandas import read_csv
 from torch.utils.data import Dataset
 
 logger = logging.getLogger(__name__)
-handler = logging.StreamHandler()
-formatter = logging.Formatter(
-        '%(levelname)-8s %(name)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(logging.WARN)
+logger.addHandler(logging.NullHandler())
 
 
+def convert_to_numpy(tensor):
+    """Convert a tensor to numpy array, handling both CuPy and NumPy inputs."""
+    if hasattr(tensor, 'get'):  # CuPy array
+        return tensor.get()
+    else:  # Already a NumPy array or other array-like
+        return np.asarray(tensor)
+    
 class ProductionData(Dataset):
     def __init__(self, es_data, max_choices=25, max_codes=50):
         self.max_choices = max_choices
         self.max_codes = max_codes
         self.country_dict = self._make_country_dict()
         self.feature_code_dict = self._make_feature_code_dict()
-        self.placename_tensor = np.array([i['tensor'] for i in es_data]).astype(np.float32)
-        self.doc_tensor = np.array([i['doc_tensor'] for i in es_data]).astype(np.float32)
-        self.other_locs_tensor = np.array([i['locs_tensor'] for i in es_data]).astype(np.float32)
+        self.placename_tensor = np.array([
+            convert_to_numpy(i['tensor']) for i in es_data
+        ]).astype(np.float32)
+        self.doc_tensor = np.array([
+            convert_to_numpy(i['doc_tensor']) for i in es_data
+        ]).astype(np.float32)
+        self.other_locs_tensor = np.array([
+            convert_to_numpy(i['locs_tensor']) for i in es_data
+        ]).astype(np.float32)
         self.feature_codes = self.create_feature_codes(es_data)
         self.country_codes = self.create_country_codes(es_data)
         self.gaz_info = self.create_gaz_features(es_data).astype(np.float32)
@@ -64,12 +72,11 @@ class ProductionData(Dataset):
 
     def create_country_codes(self, es_data):
         all_country_codes = []
-        country_code_na = self.country_dict['NA']
         for ex in es_data:
             country_code_raw = [i['country_code3'] for i in ex['es_choices'][0:self.max_choices]]
             country_code_raw += ['NULL'] * (self.max_choices - len(country_code_raw))
             country_code_raw = country_code_raw[0:self.max_choices]
-            country_codes = [self.country_dict.get(i, country_code_na) for i in country_code_raw]
+            country_codes = [self.country_dict[i] for i in country_code_raw]
             country_codes = np.array(country_codes, dtype="int")
             all_country_codes.append(country_codes)
         all_country_codes = np.array(all_country_codes).astype(np.int32)
@@ -238,12 +245,12 @@ class geoparse_model(nn.Module):
 
         # Unpack the dictionary here. Sending the data to device within the forward
         # function isn't standard, but it makes the training loop code easier to follow.
-        placename_tensor = input['placename_tensor'].to(self.device)
-        other_locs_tensor = input['other_locs_tensor'].to(self.device)
-        doc_tensor = input['doc_tensor'].to(self.device)
-        feature_codes = input['feature_codes'].to(self.device)
-        country_codes = input['country_codes'].to(self.device)
-        gaz_info = input['gaz_info'].to(self.device)
+        placename_tensor = input['placename_tensor']
+        other_locs_tensor = input['other_locs_tensor']
+        doc_tensor = input['doc_tensor']
+        feature_codes = input['feature_codes']
+        country_codes = input['country_codes']
+        gaz_info = input['gaz_info']
         logger.debug("feature_code input shape:{}".format(feature_codes.shape))
 
         ###### Text info setup  ######

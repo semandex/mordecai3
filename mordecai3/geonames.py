@@ -1,60 +1,114 @@
-import logging
-import re
-import warnings
-from collections import Counter
 
 import jellyfish
+import logging
 import numpy as np
-from opensearchpy import OpenSearch,Q,Search
-from geojson_pydantic import Polygon
+import numpy.typing as npt
+import re
+import warnings
 
-GEO_INDEX_NAME = 'geonames'
-OPENSEARCH_HOST = 'localhost'
-OPENSEARCH_PORT = 8502
+from collections import Counter
+from elasticsearch import Elasticsearch
+from elasticsearch_dsl import Q, Search
+from enum import IntEnum
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-def get_client(host:str = OPENSEARCH_HOST, port:int = OPENSEARCH_PORT):
-    kwargs = dict(
-        hosts=[host],
-        port=port,
-        use_ssl=False,
-    )
-    return OpenSearch(**kwargs)
 
-def make_conn(host:str = OPENSEARCH_HOST, port:int = OPENSEARCH_PORT, index_name: str = GEO_INDEX_NAME):
-    client = get_client(host, port)
-    return os_conn(client, index_name)
+#
+#   Helpers for data extent checking, used in elasticsearch.py
+#   ================================
+#
+#   But depend on GeonamesService functionality, so leave it here
+#
 
-def os_conn(client: OpenSearch, index_name: str = GEO_INDEX_NAME):
-    conn = Search(using=client, index=index_name)
-    return conn
+# Using an IntEnum here so that we can test whether sufficient data for a test
+# is present, since if we have "all" data, we also have "test" data.
+class DataExtent(IntEnum):
+    NA   = 0  # Fallback for ES client connection problems or missing index   
+    NONE = 1
+    TEST = 2
+    ALL  = 3
 
-def setup_es(host:str = OPENSEARCH_HOST, port:int = OPENSEARCH_PORT, index_name: str = GEO_INDEX_NAME):
-    kwargs = dict(
-        hosts=[host],
-        port=port,
-        use_ssl=False,
-    )
-    CLIENT = OpenSearch(**kwargs)
-    try:
-        CLIENT.ping()
-        logger.info("Successfully connected to Elasticsearch.")
-    except:
-        ConnectionError("Could not locate Elasticsearch. Are you sure it's running?")
-    conn = Search(using=CLIENT, index=index_name)
-    return conn
 
-def normalize(ll: list) -> np.array:    
+def determine_geonames_data_extent(conn: Elasticsearch) -> DataExtent:
+    # TODO: this is a bit hacky, but it works for now. 
+    """Check what extent of data we have in the ES/Geonames index
+    
+    Returns
+    -------
+    DataExtent
+      Either "ALL" if the full Geonames dataset is present, "TEST" if only
+      the reduced test set is present, or "NONE" if no data appears to be present.
+    """
+    search_client = Search(using=conn, index="geonames")
+    usa = get_adm1_country_entry("New York", "USA", search_client)
+    nld = get_adm1_country_entry("North Holland", "NLD", search_client)
+    if usa and nld:
+        return DataExtent.ALL
+    elif nld:   
+        return DataExtent.TEST
+    else:
+        return DataExtent.NONE
+
+
+#
+#   Geonames service class: how to actually use Geonames in mordecai3
+#   =========================================
+#
+
+
+class GeonamesService:
+    """Class to encapsulate Geonames functionality needed for mordecai3"""
+    def __init__(self, es_client: Elasticsearch):
+        self.conn = es_client
+        self.search = Search(using=self.conn, index="geonames")
+
+    def get_adm1_country_entry(self, 
+                               adm1: str, 
+                               iso3c: str | None=None, 
+                               ) -> dict | None:
+        """
+        Return the Geonames entity for an ADM1 code.
+        
+        Parameters
+        ----------
+        adm1: str
+        Name of the ADM1 (state/province)
+        iso3c: str or None
+        Optional three letter country code to limit the search
+        conn: elasticsearch connection
+        An elasticsearch connection object, as returned by setup_es()
+
+        Examples
+        --------
+        >>> conn = setup_es()
+        >>> get_adm1_country_entry("North Holland", "NLD", conn)
+        {'extracted_name': '', 'name': 'Provincie Noord-Holland', 'lat': '52.58333', 'lon': '4.91667', 'admin1_name': 'North Holland', 'admin2_name': '', 'country_code3': 'NLD', 'feature_code': 'ADM1', 'feature_class': 'A', 'geonameid': '2749879', 'start_char': '', 'end_char': ''}
+        """
+        type_filter = Q("term", feature_code="ADM1") 
+        q = {"multi_match": {"query": adm1,
+                                "fields": ['name', 'asciiname', 'alternativenames'],
+                                "type" : "phrase"}}
+        if iso3c:
+            country_filter = Q("term", country_code3=iso3c) 
+            res = self.search.query(q).filter(type_filter).filter(country_filter).execute()
+        else:
+            res = self.search.query(q).filter(type_filter).execute()
+        r = _format_country_results(res)
+        return r
+
+
+
+def normalize(ll: list[float]) -> npt.NDArray[np.float64]:    
     """Normalize an array to [0, 1]"""
-    ll = np.array(ll)
-    if len(ll) > 0:
-        max_ll = np.max(ll)
-        if max_ll == 0:
-            max_ll = 0.001
-        ll = (ll - np.min(ll)) / max_ll
-    return ll
+    arr = np.array(ll)
+    if len(arr) > 0:
+        max_arr = np.max(arr)
+        if max_arr == 0:
+            max_arr = 0.001
+        arr = (arr - np.min(arr)) / max_arr
+    return arr
 
 
 def make_admin1_counts(out):
@@ -213,13 +267,14 @@ def _clean_search_name(search_name):
         search_name = "United States"
     return search_name
 
-def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
-                remove_correct=False,
-                include_countries: list[str] | None = None,
-                exclude_countries: list[str] | None = None,
-                max_words_count: int=5,
-                geojson: Polygon | None = None
-                ):
+
+def add_es_data(ex, 
+                conn, 
+                max_results=50, 
+                fuzzy=0, 
+                limit_types=False,
+                remove_correct=False, 
+                known_country=None):
     """
     Run an Elasticsearch/geonames query for a single example and add the results
     to the object.
@@ -238,12 +293,6 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
         If True, remove the correct result from the list of results.
         This is useful for training a model to handle "none of the above"
         cases.
-    include_countries: list[str]
-        If provided, it will only return results from the list of countries provided
-    exclude_countries: list[str]
-        If provided, it will only return results excluding the list of countries provided
-    max_words_count: int
-        maximum count of words in search text while searching with fuzzy query to avoid getting maxClauseCount error in opensearch
 
     Examples
     --------
@@ -273,56 +322,24 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
         else:
             parent_place = None 
     else:
-        parent_place = None
+        parent_place = None 
     if fuzzy:
         q = {"multi_match": {"query": search_name,
                              "fields": ['name', 'alternativenames', 'asciiname'],
-                             "fuzziness": fuzzy,
-                             }}
+                             "fuzziness" : fuzzy,
+                            }}
     else:
         q = {"multi_match": {"query": search_name,
-                             "fields": ['name', 'asciiname', 'alternativenames'],
-                             "type": "phrase"}}
-
-    include_country_filter = None
-    if include_countries:
-        include_country_filter = Q("terms", country_code3=include_countries)
-    exclude_country_filter = None
-    if exclude_countries:
-        exclude_country_filter = ~Q("terms", country_code3=exclude_countries)
-
-    country_filter = None
-    if include_country_filter:
-        country_filter = include_country_filter
-
-    if exclude_country_filter:
-        if country_filter:
-            country_filter &= exclude_country_filter
-        else:
-            country_filter = exclude_country_filter
-
-    # get polygon filter if geojson provided
-    if geojson:
-        assert len(geojson.coordinates) == 1, "Only single polygon geojsons are supported for geoparsing."
-        polygon_filter = Q(
-            'geo_polygon',
-            coordinates={
-                'points': geojson.coordinates[0]
-            }
-        )
-        if country_filter: # simplest change is to keep country_filter name
-            country_filter = country_filter & polygon_filter
-        else:
-            country_filter = polygon_filter
+                                 "fields": ['name', 'asciiname', 'alternativenames'],
+                                "type" : "phrase"}}
 
     if limit_types:
         p_filter = Q("term", feature_class="P")
         a_filter = Q("term", feature_class="A")
         combined_filter = p_filter | a_filter
-        if country_filter:
-            combined_filter = combined_filter & country_filter
         res = conn.query(q).filter(combined_filter).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
-    elif country_filter:
+    if known_country:
+        country_filter = Q("term", country_code3=known_country)
         res = conn.query(q).filter(country_filter).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
     else:
         res = conn.query(q).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
@@ -331,21 +348,17 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
 
     if not choices:
         # always do a fuzzy step if nothing came up the first time
-        # if search_name has too many words, it throws an exception in opensearch #
-        enable_fuzzy = fuzzy+1
-        if len(search_name.split()) > max_words_count:
-            enable_fuzzy = 0
-
         q = {"multi_match": {"query": search_name,
                              "fields": ['name', 'alternativenames', 'asciiname'],
-                             "fuzziness" : enable_fuzzy,
+                             "fuzziness" : fuzzy+1,
                             }}
         if limit_types:
             p_filter = Q("term", feature_class="P")
             a_filter = Q("term", feature_class="A")
             combined_filter = p_filter | a_filter
             res = conn.query(q).filter(combined_filter).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
-        elif country_filter:
+        if known_country:
+            country_filter = Q("term", country_code3=known_country)
             res = conn.query(q).filter(country_filter).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
         else:
             res = conn.query(q).sort({"alt_name_length": {'order': "desc"}})[0:max_results].execute()
@@ -355,6 +368,29 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
     if remove_correct:
         choices = [c for c in choices if c['geonameid'] != ex['correct_geonamesid']]
 
+    # Always add a final "NULL" choice at the end
+    logger.debug("Adding NULL choice")
+    null_choice = {'feature_code': 'NULL', 
+            'feature_class': 'NULL', 
+            'country_code3': 'NULL', 
+            'lat': 0, 
+            'lon': 0, 
+            'name': 'NULL', 
+            'admin1_code': 'NULL', 
+            'admin1_name': 'NULL', 
+            'admin2_code': 'NULL', 
+            'admin2_name': 'NULL', 
+            'geonameid': 'NULL', 
+            'admin1_parent_match': -1, 
+            'country_code_parent_match': -1, 
+            'alt_name_length': 0, 
+            'min_dist': 99.0, 
+            'max_dist': 99.0, 
+            'avg_dist': 99.0, 
+            'ascii_dist': 99.0, 
+            'adm1_count': 0.0, 
+            'country_count': 0.0}
+    choices.append(null_choice)
     ex['es_choices'] = choices
 
     if remove_correct:
@@ -365,18 +401,14 @@ def add_es_data(ex, conn, max_results=50, fuzzy=0, limit_types=False,
     return ex
 
 
+
 def add_es_data_doc(doc_ex, conn, max_results=50, fuzzy=0, limit_types=False,
-                    remove_correct=False,
-                    include_countries: list[str] | None = None,
-                    exclude_countries: list[str] | None = None,
-                    geojson: Polygon | None = None
-                    ):
+                    remove_correct=False, known_country=None):
     doc_es = []
     for ex in doc_ex:
         with warnings.catch_warnings():
             try:
-                es = add_es_data(ex, conn, max_results, fuzzy, limit_types, remove_correct, include_countries,
-                                 exclude_countries, geojson=geojson)
+                es = add_es_data(ex, conn, max_results, fuzzy, limit_types, remove_correct, known_country)
                 doc_es.append(es)
             except Warning:
                 continue
@@ -437,11 +469,25 @@ def get_entry_by_id(geonameid: str, conn):
     r = _format_country_results(res)
     return r
 
-def get_adm1_country_entry(adm1: str, iso3c: str, conn):
+def get_adm1_country_entry(adm1: str, iso3c: str | None=None, 
+                           conn: Search=None) -> dict | None:
     """
-    Return the Geonames result for an ADM1 code.
+    Return the Geonames entity for an ADM1 code.
     
-    iso3c can be None if the country isn't known.
+    Parameters
+    ----------
+    adm1: str
+      Name of the ADM1 (state/province)
+    iso3c: str or None
+      Optional three letter country code to limit the search
+    conn: elasticsearch connection
+      An elasticsearch connection object, as returned by setup_es()
+
+    Examples
+    --------
+    >>> conn = setup_es()
+    >>> get_adm1_country_entry("North Holland", "NLD", conn)
+    {'extracted_name': '', 'name': 'Provincie Noord-Holland', 'lat': '52.58333', 'lon': '4.91667', 'admin1_name': 'North Holland', 'admin2_name': '', 'country_code3': 'NLD', 'feature_code': 'ADM1', 'feature_class': 'A', 'geonameid': '2749879', 'start_char': '', 'end_char': ''}
     """
     type_filter = Q("term", feature_code="ADM1") 
     q = {"multi_match": {"query": adm1,
@@ -455,4 +501,3 @@ def get_adm1_country_entry(adm1: str, iso3c: str, conn):
     r = _format_country_results(res)
     return r
 
-#get_adm1_country_entry("Kaduna", "NGA", conn)

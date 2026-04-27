@@ -62,36 +62,15 @@ First, run following command to download the spaCy model used to identify place 
 python -m spacy download en_core_web_trf
 ```
 
-Second, Mordecai3 requires a local instance of Opensearch with a Geonames index. 
+Second, Mordecai3 requires a local instance of Elasticsearch with a Geonames index. Instructions for setting up the index are available here: https://github.com/openeventdata/es-geonames
 
-To build this index, you will need to download few files into a directory, for example "geo_names_data" directory. Here are the flat files to download
-```shell
-cd geo_names_data
-curl https://download.geonames.org/export/dump/allCountries.zip -o allCountries.zip
-curl https://download.geonames.org/export/dump/admin1CodesASCII.txt -o admin1CodesASCII.txt
-curl https://download.geonames.org/export/dump/admin2Codes.txt -o admin2Codes.txt
+Once built, the index can be started like this:
 
-unzip allCountries.zip
+```bash
+docker run -d -p 127.0.0.1:9200:9200 -e "discovery.type=single-node" -v $PWD/geonames_index/:/usr/share/elasticsearch/data elasticsearch:7.10.1
 ```
-
-This should create 3 text files like these in `geo_name_data` directory
-```shell
-admin1CodesASCII.txt
-admin2Codes.txt
-allCountries.txt
-```
-
-Once you have this director with 3 text files, you can use `GeoNamesLoader` class to load into your opensearch instance. 
-Here is a sample code to load it using GeoNamesLoader utility class
-```python
-    client = OpenSearch(hosts=[{'host': 'localhost', 'port': 9200}])
-    loader = GeoNamesLoader(index_name='geonames', os_client=client, data_dir='geo_name_data')
-    loader.load_geocodes()
-```
-
 
 If you're doing event geoparsing, that step requires other models to be downloaded from https://huggingface.co/. These will be automatically downloaded the first time the program is run (if it's 
-
 
 ## Details and Citation
 
@@ -108,41 +87,44 @@ If you use Mordecai 3, please cite:
 }
 ```
 
+The current version of Mordecai3 includes a retrained model that slightly improves on the results reported in the paper.
+
+```
+┏━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳
+┃            ┃        ┃             ┃            ┃     Correct ┃            ┃
+┃            ┃        ┃             ┃    Correct ┃     Feature ┃    Correct ┃
+┃ Dataset    ┃ Eval N ┃ Exact match ┃    Country ┃        Code ┃       ADM1 ┃
+┡━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇
+│ training   │   7337 │       90.9% │      99.1% │       95.4% │      93.7% │
+│ set        │        │             │            │             │            │
+│ prodigy    │    500 │       87.8% │      96.8% │       87.8% │      95.1% │
+│ TR         │    274 │       84.3% │      97.8% │       89.6% │      88.1% │
+│ LGL        │    967 │       79.4% │      97.9% │       87.3% │      82.5% │
+│ GWN        │    474 │       90.1% │      97.4% │       91.0% │      95.6% │
+│ GWN_compl… │   1564 │       92.0% │      98.5% │       93.4% │      97.2% │
+│ Synth      │    300 │       93.3% │      96.9% │       96.1% │      94.9% │
+│ Wiki       │    630 │       86.0% │      98.2% │       86.3% │      96.7% │
+└────────────┴────────┴─────────────┴────────────┴─────────────┴────────────┴
+```
+
+```
+┏━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃            ┃        ┃            ┃             ┃             ┃            ┃            ┃
+┃            ┃        ┃ Mean Error ┃      Median ┃     Missing ┃      Total ┃            ┃
+┃ Dataset    ┃ Eval N ┃       (km) ┃  Error (km) ┃     correct ┃    missing ┃ Acc @161km ┃
+┡━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ training   │   7337 │      119.8 │         0.0 │       71.9% │      10.2% │       93.6 │
+│ set        │        │            │             │             │            │            │
+│ prodigy    │    500 │      273.5 │         0.0 │      100.0% │       6.8% │       95.9 │
+│ TR         │    274 │      294.7 │         0.0 │       66.7% │       2.2% │       87.3 │
+│ LGL        │    967 │      303.9 │         0.0 │       37.7% │       5.5% │       82.7 │
+│ GWN        │    474 │      249.4 │         0.0 │       31.6% │       4.0% │       94.1 │
+│ GWN_compl… │   1564 │      178.3 │         0.0 │       57.5% │       5.6% │       95.7 │
+│ Synth      │    300 │      215.3 │         0.0 │       97.8% │      15.0% │       95.7 │
+│ Wiki       │    630 │       23.8 │         0.0 │       54.5% │       3.5% │       98.0 │
+└────────────┴────────┴────────────┴─────────────┴─────────────┴────────────┴────────────┘
+```
+
 ## Acknowledgements
 
 This work was sponsored by the Political Instability Task Force (PITF). The PITF is funded by the Central Intelligence Agency. The views expressed in this here are the authors' alone and do not represent the views of the US Government.
-
-# Step to release this library 
-- Change the version in `setup.py` script
-- Run `pytest` to make sure all test passes
-```shell
-python setup.py sdist upload -r nexus
-```
-Or after running `setup.py sdist`
-```shell
-twine upload --repository nexus dist/*
-```
-
-## Geoparsing Observations / Recommendations
-Spotchecking, there are problems with both Geoparser and Geoparser_OS. Some examples available [here](https://docs.google.com/spreadsheets/d/1iVoEUBDZ0qu4hbiQX_FXypOoUb3a7A_f5JBabJ5fizQ/edit?usp=sharing). Feel free to add more examples.
-
-Relying on OpenSearch (Geoparser_OS) gives good looking text results, but tends to incorrectly pick small towns instead of intuitive large cities. Full Mordecai (Geoparser) excludes many obvious matches (e.g., "Angeles City") and picks mismatched text as well (Ormoc Port -> Legaspi Port).
-
-Looking deeper into Mordecai, there are some strange choices in the neural model design:
-- Padding logits should be -inf (probability zero) but seem to be set to a significant probability.
-- The model adds the embeddings from the "other places" and sends them to the model. This seems pretty arbitrary and could lead to weird results since there's not much training data (~6000 samples).
-- In general, considering the wide variety of place types and countries/languages, 6000 training samples seems quite small.
-
-Here are some ideas for improving geoparsing:
-- To the extent possible, use real world text chunks from as many countries as possible.
-- Compare spacy and gliner extraction, possibly train on both.
-- Use a flagship LLM (minimum LLAMA 70B or similar) to generate ground truth for ranking, 50-100k samples (more couldn't hurt). 
-  - Define exactly what behavior we want
-  - Add suitable prompt with some examples. 
-  - Iterate as needed
-- Fix padding issues.
-- Include both cross entropy (correctness) and distance losses (give partial credit for proximity). 
-  - Might need to normalize distances by place type or size. 
-- Use a transformer / attention layer - this should help with redundant place entries that are close to each other. 
-- Check how/what info from OS results are going into the model. 
-- Consider fine tuning embeddings in some fashion. 

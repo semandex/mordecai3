@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from utilities import spacy_doc_setup
 
-import mordecai3.elastic_utilities as es_util
+import mordecai3.elasticsearch as es_util
 from mordecai3.geoparse import doc_to_ex_expanded
 from mordecai3.roberta_qa import setup_qa
 from mordecai3.torch_model import ProductionData, geoparse_model
@@ -24,7 +24,7 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-logging.getLogger("opensearch").setLevel(logging.WARN)
+logging.getLogger("elasticsearch").setLevel(logging.WARN)
 
 spacy_doc_setup()
 
