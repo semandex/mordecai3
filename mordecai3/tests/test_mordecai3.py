@@ -326,7 +326,7 @@ This image likely serves as a visual aid for military personnel to track weather
 
     """
     out = geo.geoparse_doc(text, include_countries=['PHL'])
-    assert len(out['geolocated_ents']) is not 0
+    assert len(out['geolocated_ents']) != 0
 
 def test_valid_key_for_country(geo):
     text = """

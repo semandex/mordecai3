@@ -40,7 +40,7 @@ def token_tensors(doc):
 
 
 
-@st.cache(allow_output_mutation=True, suppress_st_warning=True)
+@st.cache_resource
 def load_nlp():
     nlp = spacy.load("en_core_web_trf")
     nlp.add_pipe("token_tensors")
@@ -48,7 +48,7 @@ def load_nlp():
 
 
 
-@st.cache(allow_output_mutation=True, suppress_st_warning=True)
+@st.cache_resource
 def setup_es():
     kwargs = dict(
         hosts=['localhost'],
@@ -59,7 +59,7 @@ def setup_es():
     conn = Search(using=CLIENT, index="geonames")
     return conn
 
-@st.cache(allow_output_mutation=True, suppress_st_warning=True)
+@st.cache_resource
 def load_model():
     model = geoparse_model(device=-1,
                            bert_size = 768,
@@ -68,7 +68,7 @@ def load_model():
     model.eval()
     return model
 
-@st.cache(allow_output_mutation=True, suppress_st_warning=True)
+@st.cache_resource
 def load_geo():
     geo = Geoparser(model_path="mordecai_2023-02-07_good.pt", 
                  geo_asset_path="assets",

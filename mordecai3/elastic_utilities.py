@@ -9,8 +9,8 @@ from opensearchpy import OpenSearch,Q,Search
 from geojson_pydantic import Polygon
 
 GEO_INDEX_NAME = 'geonames'
-OPENSEARCH_HOST = 'localhost'
-OPENSEARCH_PORT = 8502
+OPENSEARCH_HOST = 'http://watson'
+OPENSEARCH_PORT = 2500
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

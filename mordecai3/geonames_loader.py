@@ -3,10 +3,17 @@ import sys
 import csv
 import os
 import time
+import unicodedata
 from datetime import datetime
 from tqdm import tqdm
 from opensearchpy import OpenSearch, helpers
-from textacy.preprocessing.remove import accents as remove_accents
+
+
+def remove_accents(text: str) -> str:
+    """Remove accents/diacritics from text, preserving non-Latin characters."""
+    nfkd = unicodedata.normalize('NFKD', text)
+    return ''.join(ch for ch in nfkd if not unicodedata.combining(ch))
+
 
 from mordecai3.elastic_utilities import GEO_INDEX_NAME, OPENSEARCH_PORT, OPENSEARCH_HOST
 
@@ -85,7 +92,7 @@ def iso_convert(iso2c):
     try:
         if not iso2c.strip():
             return ""
-        
+
         iso3c = iso_dict[iso2c]
         return iso3c
     except KeyError:
@@ -270,7 +277,7 @@ class GeoNamesLoader:
         logger.info(f"loading mapping as {os_mapping}")
         self.os_client.indices.create(index=self.index_name, body=os_mapping)
 
-    def data_check(self)-> bool:
+    def data_check(self) -> bool:
         return self.data_check
 
     def load_geocodes(self):
