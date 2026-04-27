@@ -1,5 +1,9 @@
 ## Mordecai3 Changes
 
+### 3.0.0a.15 [2026/04/27]
+- Python 3.13+ changes - updated dependency requirements, changed setup.py to use pyproject.toml
+- Changed opensearch server to be configurable for tests via OPENSEARCH_HOST, OPENSEARCH_PORT env variables
+
 ### 3.0.0a.14 [2026/02/03]
 - Added geofencing support via geojson polygons to Geoparser and Geoparser_OS classes
 
