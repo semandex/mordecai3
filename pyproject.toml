@@ -29,7 +29,8 @@ dependencies = [
     "jsonlines>=3.0.0",
     "xmltodict>=0.14.2",
     "opensearch-py>=3.0.0",
-    "textacy>=0.13.0"
+    "textacy>=0.13.0",
+    "geojson-pydantic"
 ]
 
 [tool.setuptools]
