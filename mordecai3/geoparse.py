@@ -212,7 +212,7 @@ class Geoparser:
         self.conn = os_conn(client=os_client, index_name=index_name)
         if check_es:
             try:
-                assert len(list(geo.conn[1])) > 0
+                assert len(list(self.conn[1])) > 0
                 logger.info("Successfully connected to Opensearch.")
             except:
                 ConnectionError("Could not locate Opensearch. Are you sure it's running?")
