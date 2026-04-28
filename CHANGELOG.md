@@ -1,6 +1,6 @@
 ## Mordecai3 Changes
 
-### 3.0.0a.15 [2026/04/27]
+### 3.0.0a.15 [2026/04/28]
 - Python 3.13+ changes - updated dependency requirements, changed setup.py to use pyproject.toml
 - Changed opensearch server to be configurable for tests via OPENSEARCH_HOST, OPENSEARCH_PORT env variables
 

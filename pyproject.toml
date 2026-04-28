@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mordecai3"
-version = "3.0.0a.15-rc1"
+version = "3.0.0a.15"
 description = "Geoparsing, NLP, and toponym resolution"
 authors = [
     {name = "Andy Halterman", email = "ahalterman0@gmail.com"}
