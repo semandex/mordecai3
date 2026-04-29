@@ -1,5 +1,6 @@
 import logging
 import re
+import os
 import warnings
 from collections import Counter
 
@@ -9,8 +10,8 @@ from opensearchpy import OpenSearch,Q,Search
 from geojson_pydantic import Polygon
 
 GEO_INDEX_NAME = 'geonames'
-OPENSEARCH_HOST = 'localhost'
-OPENSEARCH_PORT = 8502
+OPENSEARCH_HOST = os.getenv('OPENSEARCH_HOST', 'localhost')
+OPENSEARCH_PORT = int(os.getenv('OPENSEARCH_PORT', '8502'))
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

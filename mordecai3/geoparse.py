@@ -1,9 +1,9 @@
 import logging
 import os
 import re
+from importlib.resources import as_file, files
 
 import numpy as np
-import pkg_resources
 import spacy
 import torch
 from opensearchpy import OpenSearch
@@ -212,16 +212,20 @@ class Geoparser:
         self.conn = os_conn(client=os_client, index_name=index_name)
         if check_es:
             try:
-                assert len(list(geo.conn[1])) > 0
+                assert len(list(self.conn[1])) > 0
                 logger.info("Successfully connected to Opensearch.")
             except:
                 ConnectionError("Could not locate Opensearch. Are you sure it's running?")
         if not model_path:
-            model_path = pkg_resources.resource_filename("mordecai3", mordecai_model_pt)
-        self.model = load_model(model_path)
+            with as_file(files("mordecai3") / mordecai_model_pt) as _model_path:
+                self.model = load_model(_model_path)
+        else:
+            self.model = load_model(model_path)
         if not geo_asset_path:
-            geo_asset_path = pkg_resources.resource_filename("mordecai3", "assets/")
-        self.hierarchy = load_hierarchy(geo_asset_path)
+            with as_file(files("mordecai3") / "assets") as _asset_path:
+                self.hierarchy = load_hierarchy(_asset_path)
+        else:
+            self.hierarchy = load_hierarchy(geo_asset_path)
         self.event_geoparse = event_geoparse
         if event_geoparse:
             self.trf = load_trf()
